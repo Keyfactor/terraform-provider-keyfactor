@@ -26,9 +26,19 @@ provider "keyfactor" {
 
 ### Optional
 
-- `appkey` (String, Sensitive) Application key provisioned by Keyfactor Command instance. This can also be set via the `KEYFACTOR_APPKEY` environment variable.
+- `access_token` (String, Sensitive) Access token for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_ACCESS_TOKEN` environment variable.
+- `api_path` (String) Path to Keyfactor Command API.Default value is `KeyfactorAPI`.This can also be set via the `KEYFACTOR_API_PATH` environment variable.
+- `appkey` (String, Sensitive) Application key provisioned by Keyfactor Command instance.This can also be set via the `KEYFACTOR_APPKEY` environment variable.
+- `audience` (String) OAuth audience to request when authenticating. This can also be set via the `KEYFACTOR_AUTH_AUDIENCE` environment variable.
+- `auth_ca_cert` (String) Path to CA certificate to use when connecting to Keyfactor Command identity provider.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
+- `client_id` (String) Client ID for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_CLIENT_ID` environment variable.
+- `client_secret` (String, Sensitive) Client secret for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_CLIENT_SECRET` environment variable.
+- `command_ca_cert` (String) Path to CA certificate to use when connecting to Keyfactor Command instance in PEM format.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
 - `domain` (String) Domain that Keyfactor Command instance is hosted on. This can also be set via the `KEYFACTOR_DOMAIN` environment variable.
 - `hostname` (String) Hostname of Keyfactor Command instance. Ex: keyfactor.examplecompany.com. This can also be set via the `KEYFACTOR_HOSTNAME` environment variable.
 - `password` (String, Sensitive) Password of Keyfactor Command service account. This can also be set via the `KEYFACTOR_PASSWORD` environment variable.
-- `request_timeout` (Number) Global timeout for HTTP requests to Keyfactor Command instance. Default is 30 seconds.
+- `request_timeout` (Number) Global timeout for HTTP requests to Keyfactor Command instance. This can also be set via the `KEYFACTOR_CLIENT_TIMEOUT` environment variable.Default value is `60`.
+- `scopes` (String) A list of comma separated OAuth scopes to request when authenticating. This can also be set via the `KEYFACTOR_AUTH_SCOPES` environment variable.
+- `skip_tls_verify` (Boolean) Skip TLS verification when connecting to Keyfactor Command API and identity provider.Default value is `false`.This can also be set via the `KEYFACTOR_SKIP_VERIFY` environment variable.
+- `token_url` (String) OAuth token URL for Keyfactor Command instance. This can also be set via the `KEYFACTOR_AUTH_TOKEN_URL` environment variable.
 - `username` (String) Username of Keyfactor Command service account. This can also be set via the `KEYFACTOR_USERNAME` environment variable.
