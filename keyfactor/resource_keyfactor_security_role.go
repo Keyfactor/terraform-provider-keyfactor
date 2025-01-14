@@ -3,7 +3,7 @@ package keyfactor
 import (
 	"context"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -51,7 +51,11 @@ type resourceSecurityRole struct {
 	p provider
 }
 
-func (r resourceSecurityRole) Read(ctx context.Context, request tfsdk.ReadResourceRequest, response *tfsdk.ReadResourceResponse) {
+func (r resourceSecurityRole) Read(
+	ctx context.Context,
+	request tfsdk.ReadResourceRequest,
+	response *tfsdk.ReadResourceResponse,
+) {
 	var state SecurityRole
 	diags := request.State.Get(ctx, &state)
 	response.Diagnostics.Append(diags...)
@@ -82,7 +86,11 @@ func (r resourceSecurityRole) Read(ctx context.Context, request tfsdk.ReadResour
 	}
 }
 
-func (r resourceSecurityRole) Update(ctx context.Context, request tfsdk.UpdateResourceRequest, response *tfsdk.UpdateResourceResponse) {
+func (r resourceSecurityRole) Update(
+	ctx context.Context,
+	request tfsdk.UpdateResourceRequest,
+	response *tfsdk.UpdateResourceResponse,
+) {
 	// Get plan values
 	var plan SecurityRole
 	diags := request.Plan.Get(ctx, &plan)
@@ -120,7 +128,10 @@ func (r resourceSecurityRole) Update(ctx context.Context, request tfsdk.UpdateRe
 
 	remoteState, err := r.p.client.UpdateSecurityRole(updateArg)
 	if err != nil {
-		response.Diagnostics.AddError("Identity role update error.", fmt.Sprintf("Error updating identity role '%s': "+err.Error(), plan.Name.Value))
+		response.Diagnostics.AddError(
+			"Identity role update error.",
+			fmt.Sprintf("Error updating identity role '%s': "+err.Error(), plan.Name.Value),
+		)
 		return
 	}
 
@@ -128,9 +139,11 @@ func (r resourceSecurityRole) Update(ctx context.Context, request tfsdk.UpdateRe
 	sort.Strings(*remoteState.Permissions)
 	for _, perm := range *remoteState.Permissions {
 		tflog.Info(ctx, "Permission: "+perm)
-		permissionValues = append(permissionValues, types.String{
-			Value: perm,
-		})
+		permissionValues = append(
+			permissionValues, types.String{
+				Value: perm,
+			},
+		)
 	}
 
 	var result = SecurityRole{
@@ -148,7 +161,11 @@ func (r resourceSecurityRole) Update(ctx context.Context, request tfsdk.UpdateRe
 	}
 }
 
-func (r resourceSecurityRole) Delete(ctx context.Context, request tfsdk.DeleteResourceRequest, response *tfsdk.DeleteResourceResponse) {
+func (r resourceSecurityRole) Delete(
+	ctx context.Context,
+	request tfsdk.DeleteResourceRequest,
+	response *tfsdk.DeleteResourceResponse,
+) {
 	var state SecurityRole
 	diags := request.State.Get(ctx, &state)
 	kfClient := r.p.client
@@ -176,7 +193,11 @@ func (r resourceSecurityRole) Delete(ctx context.Context, request tfsdk.DeleteRe
 
 }
 
-func (r resourceSecurityRole) Create(ctx context.Context, request tfsdk.CreateResourceRequest, response *tfsdk.CreateResourceResponse) {
+func (r resourceSecurityRole) Create(
+	ctx context.Context,
+	request tfsdk.CreateResourceRequest,
+	response *tfsdk.CreateResourceResponse,
+) {
 	if !r.p.configured {
 		response.Diagnostics.AddError(
 			"Provider not configured",
@@ -235,7 +256,11 @@ func (r resourceSecurityRole) Create(ctx context.Context, request tfsdk.CreateRe
 	}
 }
 
-func (r resourceSecurityRole) ImportState(ctx context.Context, request tfsdk.ImportResourceStateRequest, response *tfsdk.ImportResourceStateResponse) {
+func (r resourceSecurityRole) ImportState(
+	ctx context.Context,
+	request tfsdk.ImportResourceStateRequest,
+	response *tfsdk.ImportResourceStateResponse,
+) {
 	tflog.Info(ctx, "Read called on security remoteState resource")
 	roleId := request.ID
 	//roleName := state.Name.Value
@@ -244,12 +269,21 @@ func (r resourceSecurityRole) ImportState(ctx context.Context, request tfsdk.Imp
 
 	remoteState, err := r.p.client.GetSecurityRole(roleId)
 	if remoteState == nil {
-		response.Diagnostics.AddError("Unknown role error.", fmt.Sprintf("Unable to find role '%v' on Keyfactor. Read failed. ", roleId))
+		response.Diagnostics.AddError(
+			"Unknown role error.",
+			fmt.Sprintf("Unable to find role '%v' on Keyfactor. Read failed. ", roleId),
+		)
 		return
 	}
 
 	if err != nil {
-		response.Diagnostics.AddError("Unknown role error.", fmt.Sprintf("Unknown error while trying to import role '%v' on Keyfactor. Read failed. "+err.Error(), roleId))
+		response.Diagnostics.AddError(
+			"Unknown role error.",
+			fmt.Sprintf(
+				"Unknown error while trying to import role '%v' on Keyfactor. Read failed. "+err.Error(),
+				roleId,
+			),
+		)
 		return
 	}
 

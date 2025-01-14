@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -465,6 +465,7 @@ func (r resourceKeyfactorCertificate) Create(
 			return
 		}
 		ctx = tflog.SetField(ctx, "pfx_args", string(jsonData))
+
 		tflog.Debug(ctx, fmt.Sprintf("PFXArgs: %s", string(jsonData)))
 		tflog.Debug(ctx, fmt.Sprintf("Creating PFX certificate %s on Keyfactor.", PFXArgs.Subject.SubjectCommonName))
 		tflog.Debug(ctx, "Calling EnrollPFXV2.")

@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -152,7 +152,10 @@ func (r resourceCertificateStoreType) GetSchema(_ context.Context) (tfsdk.Schema
 	}, nil
 }
 
-func (r resourceCertificateStoreType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (r resourceCertificateStoreType) NewResource(_ context.Context, p tfsdk.Provider) (
+	tfsdk.Resource,
+	diag.Diagnostics,
+) {
 	return resourceCertificateStore{
 		p: *(p.(*provider)),
 	}, nil
@@ -162,7 +165,11 @@ type resourceCertificateStore struct {
 	p provider
 }
 
-func (r resourceCertificateStore) Create(ctx context.Context, request tfsdk.CreateResourceRequest, response *tfsdk.CreateResourceResponse) {
+func (r resourceCertificateStore) Create(
+	ctx context.Context,
+	request tfsdk.CreateResourceRequest,
+	response *tfsdk.CreateResourceResponse,
+) {
 	if !r.p.configured {
 		response.Diagnostics.AddError(
 			"Provider not configured",
@@ -191,7 +198,10 @@ func (r resourceCertificateStore) Create(ctx context.Context, request tfsdk.Crea
 	if csTypeErr != nil {
 		response.Diagnostics.AddError(
 			"Invalid certificate store type.",
-			fmt.Sprintf("Could not retrieve certificate store type '%s' from Keyfactor"+csTypeErr.Error(), plan.StoreType.Value),
+			fmt.Sprintf(
+				"Could not retrieve certificate store type '%s' from Keyfactor"+csTypeErr.Error(),
+				plan.StoreType.Value,
+			),
 		)
 		return
 	}
@@ -202,7 +212,10 @@ func (r resourceCertificateStore) Create(ctx context.Context, request tfsdk.Crea
 		if containerErr != nil || storeContainer == nil {
 			response.Diagnostics.AddError(
 				"Invalid container name.",
-				fmt.Sprintf("Could not retrieve container '%s' from Keyfactor"+containerErr.Error(), plan.ContainerName.Value),
+				fmt.Sprintf(
+					"Could not retrieve container '%s' from Keyfactor"+containerErr.Error(),
+					plan.ContainerName.Value,
+				),
 			)
 			return
 		}
@@ -256,20 +269,31 @@ func (r resourceCertificateStore) Create(ctx context.Context, request tfsdk.Crea
 	if agentErr != nil {
 		response.Diagnostics.AddError(
 			"Invalid agent identifier.",
-			fmt.Sprintf("Agent could not be found on Keyfactor Command using identifier '%s'. %s", plan.AgentIdentifier.Value, agentErr.Error()),
+			fmt.Sprintf(
+				"Agent could not be found on Keyfactor Command using identifier '%s'. %s",
+				plan.AgentIdentifier.Value,
+				agentErr.Error(),
+			),
 		)
 		return
 	} else if len(agents) == 0 {
 		response.Diagnostics.AddError(
 			"Agent Not Found.",
-			fmt.Sprintf("Agent could not be found on Keyfactor Command using identifier '%s'. %s", plan.AgentIdentifier.Value, agentErr.Error()),
+			fmt.Sprintf(
+				"Agent could not be found on Keyfactor Command using identifier '%s'. %s",
+				plan.AgentIdentifier.Value,
+				agentErr.Error(),
+			),
 		)
 		return
 	} else {
 		if len(agents) > 1 {
 			response.Diagnostics.AddWarning(
 				"Agent Not Found.",
-				fmt.Sprintf("Multiple agents found with identifier '%s' returned from Keyfactor Command. Using first approved agent", plan.AgentIdentifier.Value),
+				fmt.Sprintf(
+					"Multiple agents found with identifier '%s' returned from Keyfactor Command. Using first approved agent",
+					plan.AgentIdentifier.Value,
+				),
 			)
 		}
 
@@ -285,7 +309,10 @@ func (r resourceCertificateStore) Create(ctx context.Context, request tfsdk.Crea
 		if agentId == "" {
 			response.Diagnostics.AddError(
 				"Approved Agent Not Found.",
-				fmt.Sprintf("No approved agents with identifier '%s' were found on Keyfactor Command. Please review your agents on the Keyfactor Command Portal by going to Orchestrators > Management, and ensure the one you're looking for is approved.", plan.AgentIdentifier.Value),
+				fmt.Sprintf(
+					"No approved agents with identifier '%s' were found on Keyfactor Command. Please review your agents on the Keyfactor Command Portal by going to Orchestrators > Management, and ensure the one you're looking for is approved.",
+					plan.AgentIdentifier.Value,
+				),
 			)
 			return
 		}
@@ -361,7 +388,11 @@ func (r resourceCertificateStore) Create(ctx context.Context, request tfsdk.Crea
 
 }
 
-func (r resourceCertificateStore) Read(ctx context.Context, request tfsdk.ReadResourceRequest, response *tfsdk.ReadResourceResponse) {
+func (r resourceCertificateStore) Read(
+	ctx context.Context,
+	request tfsdk.ReadResourceRequest,
+	response *tfsdk.ReadResourceResponse,
+) {
 	var state CertificateStore
 	diags := request.State.Get(ctx, &state)
 	response.Diagnostics.Append(diags...)
@@ -416,7 +447,11 @@ func (r resourceCertificateStore) Read(ctx context.Context, request tfsdk.ReadRe
 	}
 }
 
-func (r resourceCertificateStore) Update(ctx context.Context, request tfsdk.UpdateResourceRequest, response *tfsdk.UpdateResourceResponse) {
+func (r resourceCertificateStore) Update(
+	ctx context.Context,
+	request tfsdk.UpdateResourceRequest,
+	response *tfsdk.UpdateResourceResponse,
+) {
 	// Get plan values
 	var plan CertificateStore
 	diags := request.Plan.Get(ctx, &plan)
@@ -438,7 +473,10 @@ func (r resourceCertificateStore) Update(ctx context.Context, request tfsdk.Upda
 	if csTypeErr != nil {
 		response.Diagnostics.AddError(
 			"Invalid certificate store type.",
-			fmt.Sprintf("Could not retrieve certificate store type '%s' from Keyfactor"+csTypeErr.Error(), plan.StoreType.Value),
+			fmt.Sprintf(
+				"Could not retrieve certificate store type '%s' from Keyfactor"+csTypeErr.Error(),
+				plan.StoreType.Value,
+			),
 		)
 		return
 	}
@@ -457,7 +495,10 @@ func (r resourceCertificateStore) Update(ctx context.Context, request tfsdk.Upda
 		if containerErr != nil || storeContainer == nil {
 			response.Diagnostics.AddError(
 				"Invalid container name.",
-				fmt.Sprintf("Could not retrieve container '%s' from Keyfactor"+containerErr.Error(), plan.ContainerName.Value),
+				fmt.Sprintf(
+					"Could not retrieve container '%s' from Keyfactor"+containerErr.Error(),
+					plan.ContainerName.Value,
+				),
 			)
 			return
 		}
@@ -472,20 +513,31 @@ func (r resourceCertificateStore) Update(ctx context.Context, request tfsdk.Upda
 	if agentErr != nil {
 		response.Diagnostics.AddError(
 			"Invalid agent identifier.",
-			fmt.Sprintf("Agent could not be found on Keyfactor Command using identifier '%s'. %s", plan.AgentIdentifier.Value, agentErr.Error()),
+			fmt.Sprintf(
+				"Agent could not be found on Keyfactor Command using identifier '%s'. %s",
+				plan.AgentIdentifier.Value,
+				agentErr.Error(),
+			),
 		)
 		return
 	} else if len(agents) == 0 {
 		response.Diagnostics.AddError(
 			"Agent Not Found.",
-			fmt.Sprintf("Agent could not be found on Keyfactor Command using identifier '%s'. %s", plan.AgentIdentifier.Value, agentErr.Error()),
+			fmt.Sprintf(
+				"Agent could not be found on Keyfactor Command using identifier '%s'. %s",
+				plan.AgentIdentifier.Value,
+				agentErr.Error(),
+			),
 		)
 		return
 	} else {
 		if len(agents) > 1 {
 			response.Diagnostics.AddWarning(
 				"Agent Not Found.",
-				fmt.Sprintf("Multiple agents found with identifier '%s' returned from Keyfactor Command. Using first approved agent", plan.AgentIdentifier.Value),
+				fmt.Sprintf(
+					"Multiple agents found with identifier '%s' returned from Keyfactor Command. Using first approved agent",
+					plan.AgentIdentifier.Value,
+				),
 			)
 		}
 
@@ -501,7 +553,10 @@ func (r resourceCertificateStore) Update(ctx context.Context, request tfsdk.Upda
 		if agentId == "" {
 			response.Diagnostics.AddError(
 				"Approved Agent Not Found.",
-				fmt.Sprintf("No approved agents with identifier '%s' were found on Keyfactor Command. Please review your agents on the Keyfactor Command Portal by going to Orchestrators > Management, and ensure the one you're looking for is approved.", plan.AgentIdentifier.Value),
+				fmt.Sprintf(
+					"No approved agents with identifier '%s' were found on Keyfactor Command. Please review your agents on the Keyfactor Command Portal by going to Orchestrators > Management, and ensure the one you're looking for is approved.",
+					plan.AgentIdentifier.Value,
+				),
 			)
 			return
 		}
@@ -628,7 +683,11 @@ func (r resourceCertificateStore) Update(ctx context.Context, request tfsdk.Upda
 	}
 }
 
-func (r resourceCertificateStore) Delete(ctx context.Context, request tfsdk.DeleteResourceRequest, response *tfsdk.DeleteResourceResponse) {
+func (r resourceCertificateStore) Delete(
+	ctx context.Context,
+	request tfsdk.DeleteResourceRequest,
+	response *tfsdk.DeleteResourceResponse,
+) {
 	var state CertificateStore
 	diags := request.State.Get(ctx, &state)
 	kfClient := r.p.client
@@ -651,7 +710,10 @@ func (r resourceCertificateStore) Delete(ctx context.Context, request tfsdk.Dele
 
 	err := kfClient.DeleteCertificateStore(certificateStoreId)
 	if err != nil {
-		response.Diagnostics.AddError("Certificate store delete error.", fmt.Sprintf("Could not delete certificate store '%s' on Keyfactor: "+err.Error(), certificateStoreId))
+		response.Diagnostics.AddError(
+			"Certificate store delete error.",
+			fmt.Sprintf("Could not delete certificate store '%s' on Keyfactor: "+err.Error(), certificateStoreId),
+		)
 		return
 	}
 
@@ -660,7 +722,11 @@ func (r resourceCertificateStore) Delete(ctx context.Context, request tfsdk.Dele
 
 }
 
-func (r resourceCertificateStore) ImportState(ctx context.Context, request tfsdk.ImportResourceStateRequest, response *tfsdk.ImportResourceStateResponse) {
+func (r resourceCertificateStore) ImportState(
+	ctx context.Context,
+	request tfsdk.ImportResourceStateRequest,
+	response *tfsdk.ImportResourceStateResponse,
+) {
 	var state CertificateStore
 
 	tflog.Info(ctx, "Read called on certificate store resource")
@@ -692,7 +758,10 @@ func (r resourceCertificateStore) ImportState(ctx context.Context, request tfsdk
 	if csTypeErr != nil {
 		response.Diagnostics.AddError(
 			ERR_SUMMARY_CERTIFICATE_RESOURCE_READ,
-			fmt.Sprintf("Could not retrieve certificate store type '%s' from Keyfactor Command: "+err.Error(), readResponse.CertStoreType),
+			fmt.Sprintf(
+				"Could not retrieve certificate store type '%s' from Keyfactor Command: "+err.Error(),
+				readResponse.CertStoreType,
+			),
 		)
 		return
 	}

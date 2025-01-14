@@ -3,14 +3,17 @@ package keyfactor
 import (
 	"context"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/Keyfactor/keyfactor-auth-client-go/auth_providers"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"os"
-	"strconv"
-	"time"
 )
 
 var stderr = os.Stderr
@@ -24,45 +27,144 @@ type provider struct {
 	client     *api.Client
 }
 
-// GetSchema
-func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+const (
+	EnvVarUsage              = "This can also be set via the `%s` environment variable."
+	DefaultValMsg            = "Default value is `%v`."
+	InvalidProviderConfigErr = "invalid provider configuration"
+	Version                  = "2.2.0-rc.14"
+)
+
+// GetSchema - Defines provider schema
+func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	tflog.Info(ctx, fmt.Sprintf("Starting Keyfactor terraform provider version %s", Version))
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"hostname": {
-				Type:        types.StringType,
-				Optional:    true,
-				Description: "Hostname of Keyfactor Command instance. Ex: keyfactor.examplecompany.com. This can also be set via the `KEYFACTOR_HOSTNAME` environment variable.",
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Hostname of Keyfactor Command instance. Ex: keyfactor.examplecompany.com. "+
+						EnvVarUsage, auth_providers.EnvKeyfactorHostName,
+				),
 			},
-
+			"command_ca_certificate": {
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Path to CA certificate to use when connecting to the Keyfactor Command API in PEM"+
+						" format."+EnvVarUsage, auth_providers.EnvKeyfactorCACert,
+				),
+			},
+			"auth_ca_certificate": {
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Path to CA certificate to use when connecting to a Keyfactor Command identity provider in PEM"+
+						" format."+EnvVarUsage, auth_providers.EnvKeyfactorCACert,
+				),
+			},
+			"api_path": {
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Path to Keyfactor Command API."+DefaultValMsg+EnvVarUsage,
+					auth_providers.DefaultCommandAPIPath, auth_providers.EnvKeyfactorAPIPath,
+				),
+			},
 			"username": {
-				Type:        types.StringType,
-				Optional:    true,
-				Description: "Username of Keyfactor Command service account. This can also be set via the `KEYFACTOR_USERNAME` environment variable.",
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Username of Keyfactor Command service account. "+
+						EnvVarUsage, auth_providers.EnvKeyfactorUsername,
+				),
 			},
-
 			"password": {
-				Type:        types.StringType,
-				Optional:    true,
-				Sensitive:   true,
-				Description: "Password of Keyfactor Command service account. This can also be set via the `KEYFACTOR_PASSWORD` environment variable.",
+				Type:      types.StringType,
+				Optional:  true,
+				Sensitive: true,
+				Description: fmt.Sprintf(
+					"Password of Keyfactor Command service account. "+
+						EnvVarUsage, auth_providers.EnvKeyfactorPassword,
+				),
 			},
-
 			"appkey": {
-				Type:        types.StringType,
-				Optional:    true,
-				Sensitive:   true,
-				Description: "Application key provisioned by Keyfactor Command instance. This can also be set via the `KEYFACTOR_APPKEY` environment variable.",
+				Type:      types.StringType,
+				Optional:  true,
+				Sensitive: true,
+				Description: "Application key provisioned by Keyfactor Command instance." +
+					"This can also be set via the `KEYFACTOR_APPKEY` environment variable.",
 			},
-
 			"domain": {
-				Type:        types.StringType,
-				Optional:    true,
-				Description: "Domain that Keyfactor Command instance is hosted on. This can also be set via the `KEYFACTOR_DOMAIN` environment variable.",
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Domain that Keyfactor Command instance is hosted on. "+
+						EnvVarUsage, auth_providers.EnvKeyfactorDomain,
+				),
+			},
+			"token_url": {
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"OAuth token URL for Keyfactor Command instance. "+
+						EnvVarUsage, auth_providers.EnvKeyfactorAuthTokenURL,
+				),
+			},
+			"client_id": {
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Client ID for OAuth authentication. "+EnvVarUsage, auth_providers.EnvKeyfactorClientID,
+				),
+			},
+			"client_secret": {
+				Type:      types.StringType,
+				Optional:  true,
+				Sensitive: true,
+				Description: fmt.Sprintf(
+					"Client secret for OAuth authentication. "+EnvVarUsage, auth_providers.EnvKeyfactorClientSecret,
+				),
+			},
+			"access_token": {
+				Type:      types.StringType,
+				Optional:  true,
+				Sensitive: true,
+				Description: fmt.Sprintf(
+					"Access token for OAuth authentication. "+EnvVarUsage, auth_providers.EnvKeyfactorAccessToken,
+				),
+			},
+			"scopes": {
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"A list of comma separated OAuth scopes to request when authenticating. "+
+						EnvVarUsage, auth_providers.EnvKeyfactorAuthScopes,
+				),
+			},
+			"audience": {
+				Type:     types.StringType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"OAuth audience to request when authenticating. "+
+						EnvVarUsage, auth_providers.EnvKeyfactorAuthAudience,
+				),
 			},
 			"request_timeout": {
-				Type:        types.Int64Type,
-				Optional:    true,
-				Description: "Global timeout for HTTP requests to Keyfactor Command instance. Default is 30 seconds.",
+				Type:     types.Int64Type,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Global timeout for HTTP requests to Keyfactor Command instance. "+EnvVarUsage+DefaultValMsg,
+					auth_providers.EnvKeyfactorClientTimeout, auth_providers.DefaultClientTimeout,
+				),
+			},
+			"skip_tls_verify": {
+				Type:     types.BoolType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"Skip TLS verification when connecting to Keyfactor Command API and identity provider."+
+						DefaultValMsg+EnvVarUsage, false, auth_providers.EnvKeyfactorSkipVerify,
+				),
 			},
 		},
 	}, nil
@@ -70,15 +172,241 @@ func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics)
 
 // Provider schema struct
 type providerData struct {
-	Username       types.String `tfsdk:"username"`
-	Hostname       types.String `tfsdk:"hostname"`
-	Password       types.String `tfsdk:"password"`
-	ApiKey         types.String `tfsdk:"appkey"`
-	Domain         types.String `tfsdk:"domain"`
-	RequestTimeout types.Int64  `tfsdk:"request_timeout"`
+	Username             types.String `tfsdk:"username"`
+	Hostname             types.String `tfsdk:"hostname"`
+	CommandCACertificate types.String `tfsdk:"command_ca_certificate"`
+	AuthCACertificate    types.String `tfsdk:"auth_ca_certificate"`
+	Password             types.String `tfsdk:"password"`
+	ApiKey               types.String `tfsdk:"appkey"`
+	ApiPath              types.String `tfsdk:"api_path"`
+	Domain               types.String `tfsdk:"domain"`
+	TokenURL             types.String `tfsdk:"token_url"`
+	ClientID             types.String `tfsdk:"client_id"`
+	ClientSecret         types.String `tfsdk:"client_secret"`
+	AccessToken          types.String `tfsdk:"access_token"`
+	Scopes               types.String `tfsdk:"scopes"`
+	Audience             types.String `tfsdk:"audience"`
+	RequestTimeout       types.Int64  `tfsdk:"request_timeout"`
+	SkipTLSVerify        types.Bool   `tfsdk:"skip_tls_verify"`
 }
 
-func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
+func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_providers.Server, diag.Diagnostics) {
+
+	LogFunctionEntry(ctx, "getServerConfig")
+	oAuthNoParamsConfig := &auth_providers.CommandConfigOauth{}
+	basicAuthNoParamsConfig := &auth_providers.CommandAuthConfigBasic{}
+	d := diag.Diagnostics{}
+
+	// Core provider config
+	tflog.Debug(ctx, "Resolving command hostname from environment variables")
+	hostname, hOk := os.LookupEnv(auth_providers.EnvKeyfactorHostName)
+	if !hOk || c.Hostname.Value != "" {
+		tflog.Debug(ctx, "Using hostname from provider configuration")
+		hostname = c.Hostname.Value
+		hOk = true
+	}
+	ctx = tflog.SetField(ctx, "hostname", hostname)
+
+	tflog.Debug(ctx, "Resolving API path from environment variables")
+	apiPath, aOk := os.LookupEnv(auth_providers.EnvKeyfactorAPIPath)
+	if !aOk || c.ApiPath.Value != "" {
+		tflog.Debug(ctx, "Using API path from provider configuration")
+		apiPath = c.ApiPath.Value
+	}
+	ctx = tflog.SetField(ctx, "api_path", apiPath)
+
+	tflog.Debug(ctx, "Resolving TLS skip verify from environment variables")
+	skipVerify, svOk := os.LookupEnv(auth_providers.EnvKeyfactorSkipVerify)
+	var skipVerifyBool bool
+	if c.SkipTLSVerify.Value {
+		tflog.Debug(ctx, "Using TLS skip verify from provider configuration")
+		skipVerifyBool = true
+	} else if svOk {
+		//convert to bool
+		tflog.Debug(ctx, "Using TLS skip verify from environment variables")
+		skipVerify = strings.ToLower(skipVerify)
+		skipVerifyBool = skipVerify == "true" || skipVerify == "1" || skipVerify == "yes" || skipVerify == "y" || skipVerify == "t"
+	}
+	ctx = tflog.SetField(ctx, "skip_verify", skipVerify)
+
+	tflog.Debug(ctx, "Resolving command client timeout from environment variables")
+	clientTimeoutStr, tOk := os.LookupEnv(auth_providers.EnvKeyfactorClientTimeout)
+	var clientTimeout int64
+	if !tOk || (c.RequestTimeout.Value > 0) {
+		tflog.Debug(ctx, "Using client timeout from provider configuration")
+		clientTimeout = c.RequestTimeout.Value
+	} else if tOk {
+		tflog.Debug(ctx, "Using client timeout from environment variables")
+		clientTimeout, _ = strconv.ParseInt(clientTimeoutStr, 10, 64)
+	} else {
+		tflog.Warn(
+			ctx, fmt.Sprintf(
+				"invalid value for `client_timeout` using default of %d",
+				auth_providers.DefaultClientTimeout,
+			),
+		)
+		clientTimeout = auth_providers.DefaultClientTimeout
+	}
+	ctx = tflog.SetField(ctx, "client_timeout", clientTimeoutStr)
+
+	tflog.Debug(ctx, "Resolving CA cert path from environment variables")
+	caCert, caOk := os.LookupEnv(auth_providers.EnvKeyfactorCACert)
+	if !caOk || c.CommandCACertificate.Value != "" {
+		tflog.Debug(ctx, "Using CA cert from provider configuration")
+		caCert = c.CommandCACertificate.Value
+	}
+	ctx = tflog.SetField(ctx, "command_ca_certificate", caCert)
+
+	// Basic auth provider config
+	tflog.Debug(ctx, "Resolving username from environment variables")
+	username, uOk := os.LookupEnv(auth_providers.EnvKeyfactorUsername)
+	if !uOk || c.Username.Value != "" {
+		tflog.Debug(ctx, "Using username from provider configuration")
+		username = c.Username.Value
+		if username != "" {
+			uOk = true
+		}
+	}
+	ctx = tflog.SetField(ctx, "username", username)
+
+	tflog.Debug(ctx, "Resolving password from environment variables")
+	password, pOk := os.LookupEnv(auth_providers.EnvKeyfactorPassword)
+	if !pOk || c.Password.Value != "" {
+		tflog.Debug(ctx, "Using password from provider configuration")
+		password = c.Password.Value
+
+	}
+	ctx = tflog.SetField(ctx, "password", password)
+	if password != "" {
+		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "password", password)
+		pOk = true
+	}
+
+	tflog.Debug(ctx, "Resolving domain path from environment variables")
+	domain, dOk := os.LookupEnv(auth_providers.EnvKeyfactorDomain)
+	if !dOk || c.Domain.Value != "" {
+		tflog.Debug(ctx, "Using domain from provider configuration")
+		domain = c.Domain.Value
+		if domain != "" {
+			dOk = true
+		}
+	}
+	ctx = tflog.SetField(ctx, "domain", domain)
+
+	//oAuth auth provider config
+	tflog.Debug(ctx, "Resolving oauth clientID from environment variables")
+	clientId, cOk := os.LookupEnv(auth_providers.EnvKeyfactorClientID)
+	if !cOk || c.ClientID.Value != "" {
+		tflog.Debug(ctx, "Using clientID from provider configuration")
+		clientId = c.ClientID.Value
+		if clientId != "" {
+			cOk = true
+		}
+	}
+	ctx = tflog.SetField(ctx, "client_id", clientId)
+
+	tflog.Debug(ctx, "Resolving oauth clientSecret from environment variables")
+	clientSecret, csOk := os.LookupEnv(auth_providers.EnvKeyfactorClientSecret)
+	if !csOk || c.ClientSecret.Value != "" {
+		tflog.Debug(ctx, "Using clientSecret from provider configuration")
+		clientSecret = c.ClientSecret.Value
+	}
+	ctx = tflog.SetField(ctx, "client_secret", clientSecret)
+	if clientSecret != "" {
+		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "client_secret", clientSecret)
+		csOk = true
+	}
+
+	tflog.Debug(ctx, "Resolving oauth tokenURL from environment variables")
+	tokenUrl, tOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthTokenURL)
+	if !tOk || c.TokenURL.Value != "" {
+		tflog.Debug(ctx, "Using tokenURL from provider configuration")
+		tokenUrl = c.TokenURL.Value
+		if tokenUrl != "" {
+			tOk = true
+		}
+	}
+	ctx = tflog.SetField(ctx, "token_url", tokenUrl)
+
+	tflog.Debug(ctx, "Resolving oauth bearer token from environment variables")
+	accessToken, atOk := os.LookupEnv(auth_providers.EnvKeyfactorAccessToken)
+	if !atOk || c.AccessToken.Value != "" {
+		tflog.Debug(ctx, "Using access token from provider configuration")
+		accessToken = c.AccessToken.Value
+	}
+	ctx = tflog.SetField(ctx, "access_token", accessToken)
+	if accessToken != "" {
+		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "access_token", accessToken)
+		atOk = true
+	}
+
+	isBasicAuth := uOk && pOk
+	ctx = tflog.SetField(ctx, "is_basic_auth", isBasicAuth)
+	isOAuth := (cOk && csOk && tOk) || atOk
+	ctx = tflog.SetField(ctx, "is_oauth", isOAuth)
+
+	tflog.Debug(ctx, "Beginning authentication")
+	if isBasicAuth {
+		LogFunctionCall(ctx, "basicAuthNoParamsConfig.Authenticate")
+		basicAuthNoParamsConfig.WithCommandHostName(hostname).
+			WithCommandAPIPath(apiPath).
+			WithSkipVerify(skipVerifyBool).
+			WithCommandCACert(caCert).
+			WithClientTimeout(int(clientTimeout))
+		bErr := basicAuthNoParamsConfig.
+			WithUsername(username).
+			WithPassword(password).
+			WithDomain(domain).
+			Authenticate()
+		LogFunctionReturned(ctx, "basicAuthNoParamsConfig.Authenticate")
+
+		if bErr != nil {
+			errMsg := fmt.Sprintf("unable to authenticate with provided basic auth credentials: %s" + bErr.Error())
+			tflog.Error(ctx, errMsg)
+			d.AddError("basic auth authentication error", errMsg)
+			return nil, d
+		}
+		LogFunctionExit(ctx, "getServerConfigFromEnv()")
+		return basicAuthNoParamsConfig.GetServerConfig(), d
+	} else if isOAuth {
+		LogFunctionCall(ctx, "oAuthNoParamsConfig.Authenticate()")
+		_ = oAuthNoParamsConfig.CommandAuthConfig.
+			WithCommandHostName(hostname).
+			WithCommandAPIPath(apiPath).
+			WithSkipVerify(skipVerifyBool).
+			WithCommandCACert(caCert).
+			WithClientTimeout(int(clientTimeout))
+		oErr := oAuthNoParamsConfig.
+			WithClientId(clientId).
+			WithClientSecret(clientSecret).
+			WithTokenUrl(tokenUrl).
+			WithAccessToken(accessToken).
+			Authenticate()
+		LogFunctionReturned(ctx, "oAuthNoParamsConfig.Authenticate()")
+		if oErr != nil {
+			oErrMsg := fmt.Sprintf("unable to authenticate with provided OAuth auth credentials: %s", oErr.Error())
+			tflog.Error(ctx, oErrMsg)
+			d.AddError("oauth authentication error: "+oErr.Error(), oErrMsg)
+			return nil, d
+		}
+
+		LogFunctionExit(ctx, "getServerConfigFromEnv()")
+		return oAuthNoParamsConfig.GetServerConfig(), d
+	}
+
+	cErrMsg := "unable to authenticate with provided credentials"
+	tflog.Error(ctx, cErrMsg)
+	d.AddError("client configuration error", cErrMsg)
+	LogFunctionExit(ctx, "getServerConfigFromEnv()")
+	return nil, d
+
+}
+
+func (p *provider) Configure(
+	ctx context.Context,
+	req tfsdk.ConfigureProviderRequest,
+	resp *tfsdk.ConfigureProviderResponse,
+) {
 	// Retrieve provider data from configuration
 	var config providerData
 
@@ -88,162 +416,19 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 		return
 	}
 
+	tflog.Info(ctx, "validating provider auth configuration")
+	serverConfig, confDiags := p.getServerConfig(&config, ctx)
+	resp.Diagnostics.Append(confDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	tflog.Info(ctx, "provider configuration is valid")
+
 	// User must provide a user to the provider
-	var username string
-	if config.Username.Unknown {
-		// Cannot connect to client with an unknown value
-		tflog.Error(ctx, "Provider username is UNKNOWN")
-		resp.Diagnostics.AddWarning(
-			"Invalid provider username.",
-			"Cannot use unknown value as `username`",
-		)
-		return
-	}
-	if config.Username.Null {
-		tflog.Debug(ctx, fmt.Sprintf("Provider username is NULL, attempting to source from %s", EnvCommandUsername))
-		username = os.Getenv(EnvCommandUsername)
-		config.Username.Value = username
-	} else {
-		username = config.Username.Value
-	}
-	if username == "" {
-		// Error vs warning - empty value must stop execution
-		resp.Diagnostics.AddError(
-			"Invalid provider username.",
-			"`username` cannot be an empty string.",
-		)
-		return
-	}
-	// User must provide a user to the provider
-	var domain string
-	if config.Domain.Unknown {
-		// Cannot connect to client with an unknown value
-		resp.Diagnostics.AddWarning(
-			"Invalid provider `domain`.",
-			"Cannot use unknown value for `domain`.",
-		)
-		return
-	}
-	if config.Domain.Null {
-		domain = os.Getenv("KEYFACTOR_DOMAIN")
-		config.Domain.Value = domain
-	} else {
-		domain = config.Domain.Value
-	}
-	if domain == "" {
-		// Error vs warning - empty value must stop execution
-		resp.Diagnostics.AddError(
-			"Invalid provider `domain`.",
-			"`domain` cannot be an empty string.",
-		)
-		return
-	}
-
-	// User must provide a password to the provider
-	var apiKey string
-	if config.ApiKey.Unknown {
-		// Cannot connect to client with an unknown value
-		resp.Diagnostics.AddError(
-			"Invalid provider API key.",
-			"Cannot use unknown value as `appkey`.",
-		)
-		return
-	}
-
-	if config.ApiKey.Null {
-		apiKey = os.Getenv("KEYFACTOR_APPKEY")
-		config.ApiKey.Value = apiKey
-	} else {
-		apiKey = config.ApiKey.Value
-	}
-
-	// User must provide a password to the provider
-	var password string
-	if config.Password.Unknown {
-		// Cannot connect to client with an unknown value
-		resp.Diagnostics.AddError(
-			"Invalid provider `password`.",
-			"Cannot use unknown value as `password`",
-		)
-		return
-	}
-
-	if config.Password.Null {
-		password = os.Getenv("KEYFACTOR_PASSWORD")
-		config.Password.Value = password
-	} else {
-		password = config.Password.Value
-	}
-
-	if password == "" && apiKey == "" {
-		// Error vs warning - empty value must stop execution
-		resp.Diagnostics.AddError(
-			"Invlaid provider credentials. ",
-			"`password` and `appkey` cannot both be empty string.",
-		)
-		return
-	}
-
-	// User must specify a host
-	var host string
-	if config.Hostname.Unknown {
-		// Cannot connect to client with an unknown value
-		resp.Diagnostics.AddError(
-			"Invalid provider `host`.",
-			"Cannot use unknown value as `host`.",
-		)
-		return
-	}
-
-	if config.Hostname.Null {
-		host = os.Getenv("KEYFACTOR_HOSTNAME")
-		config.Hostname.Value = host
-	} else {
-		host = config.Hostname.Value
-	}
-
-	if host == "" {
-		// Error vs warning - empty value must stop execution
-		resp.Diagnostics.AddError(
-			"Invalid provider `host`.",
-			"Provider `host` cannot be an empty string.",
-		)
-		return
-	}
-
-	// Set default request timeout
-	if config.RequestTimeout.Null {
-		timeout := os.Getenv("KEYFACTOR_TIMEOUT")
-		if timeout == "" {
-			config.RequestTimeout.Value = MAX_WAIT_SECONDS
-		} else {
-			//convert string to int
-			timeoutInt, err := strconv.Atoi(timeout)
-			if err != nil {
-				resp.Diagnostics.AddError(
-					"Invalid provider `timeout`.",
-					"Provider `timeout` must be an integer.",
-				)
-				return
-			}
-			config.RequestTimeout.Value = int64(timeoutInt)
-		}
-
-	}
-
-	// Create a new Keyfactor client and set it to the provider client
-	var clientAuth api.AuthConfig
-	clientAuth.Username = config.Username.Value
-	clientAuth.Password = config.Password.Value
-	//clientAuth.ApiKey = config.ApiKey.Value //TODO: Add API key support
-	clientAuth.Domain = config.Domain.Value
-	clientAuth.Hostname = config.Hostname.Value
-	clientAuth.Timeout = int(config.RequestTimeout.Value)
-
 	connected := false
 	connectionRetries := 0
 	for !connected && connectionRetries < 5 {
-		c, err := api.NewKeyfactorClient(&clientAuth)
+		c, err := api.NewKeyfactorClient(serverConfig, &ctx)
 
 		if err != nil {
 			if connectionRetries == 4 {

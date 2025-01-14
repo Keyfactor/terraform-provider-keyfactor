@@ -7,13 +7,15 @@
 ## Compatibility
 | Keyfactor Command Version | Terraform Provider Version |
 |---------------------------|----------------------------|
+| 12.x                      | 2.2.x                      |
+| 11.x                      | 2.2.x                      |
 | 10.x                      | 2.0.x                      |
 | 9.x                       | 1.0.x                      |
 
 ## Requirements
 * [Go](https://golang.org/doc/install) 1.18.x (to build the provider plugin)
 * [Terraform](https://www.terraform.io/downloads) 1.1.x
-* [Keyfactor Command](https://www.keyfactor.com/) v10.x
+* [Keyfactor Command](https://www.keyfactor.com/)
     * Keyfactor Command account with permissions to required Keyfactor features (IE certificate)
 
 ## Local install
