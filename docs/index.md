@@ -13,11 +13,23 @@ description: |-
 ## Example Usage
 
 ```terraform
+# basic auth configuration example
 provider "keyfactor" {
   username = "COMMAND\\your_username"
   password = "your_api_password"
   hostname = "mykfinstance.kfdelivery.com"
   domain   = "mydomain.com"
+}
+
+# oauth configuration example
+provider "keyfactor" {
+  client_id = "my_oauth_client_id"
+  client_secret = "my_oauth_client_secret"
+  scopes = "enroll,agents,cert:admin" # These are example, fictitious, scopes and will vary based on identity provider.
+  token_url = "https://mykfinstance.kfdelivery.com:8444/realms/Keyfactor/protocol/openid-connect/token"
+  hostname = "mykfinstance.kfdelivery.com"
+
+  alias = "keyfactor_command_oauth" # This isn't required
 }
 ```
 
@@ -30,10 +42,10 @@ provider "keyfactor" {
 - `api_path` (String) Path to Keyfactor Command API.Default value is `KeyfactorAPI`.This can also be set via the `KEYFACTOR_API_PATH` environment variable.
 - `appkey` (String, Sensitive) Application key provisioned by Keyfactor Command instance.This can also be set via the `KEYFACTOR_APPKEY` environment variable.
 - `audience` (String) OAuth audience to request when authenticating. This can also be set via the `KEYFACTOR_AUTH_AUDIENCE` environment variable.
-- `auth_ca_cert` (String) Path to CA certificate to use when connecting to Keyfactor Command identity provider.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
+- `auth_ca_certificate` (String) Path to CA certificate to use when connecting to a Keyfactor Command identity provider in PEM format.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
 - `client_id` (String) Client ID for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_CLIENT_ID` environment variable.
 - `client_secret` (String, Sensitive) Client secret for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_CLIENT_SECRET` environment variable.
-- `command_ca_cert` (String) Path to CA certificate to use when connecting to Keyfactor Command instance in PEM format.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
+- `command_ca_certificate` (String) Path to CA certificate to use when connecting to the Keyfactor Command API in PEM format.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
 - `domain` (String) Domain that Keyfactor Command instance is hosted on. This can also be set via the `KEYFACTOR_DOMAIN` environment variable.
 - `hostname` (String) Hostname of Keyfactor Command instance. Ex: keyfactor.examplecompany.com. This can also be set via the `KEYFACTOR_HOSTNAME` environment variable.
 - `password` (String, Sensitive) Password of Keyfactor Command service account. This can also be set via the `KEYFACTOR_PASSWORD` environment variable.
