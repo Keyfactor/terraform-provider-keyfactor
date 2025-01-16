@@ -23,11 +23,11 @@ provider "keyfactor" {
 
 # oauth configuration example
 provider "keyfactor" {
-  client_id = "my_oauth_client_id"
+  client_id     = "my_oauth_client_id"
   client_secret = "my_oauth_client_secret"
-  scopes = "enroll,agents,cert:admin" # These are example, fictitious, scopes and will vary based on identity provider.
-  token_url = "https://mykfinstance.kfdelivery.com:8444/realms/Keyfactor/protocol/openid-connect/token"
-  hostname = "mykfinstance.kfdelivery.com"
+  scopes        = "enroll,agents,cert:admin" # These are example, fictitious, scopes and will vary based on identity provider.
+  token_url     = "https://mykfinstance.kfdelivery.com:8444/realms/Keyfactor/protocol/openid-connect/token"
+  hostname      = "mykfinstance.kfdelivery.com"
 
   alias = "keyfactor_command_oauth" # This isn't required
 }
@@ -49,6 +49,10 @@ provider "keyfactor" {
 - `domain` (String) Domain that Keyfactor Command instance is hosted on. This can also be set via the `KEYFACTOR_DOMAIN` environment variable.
 - `hostname` (String) Hostname of Keyfactor Command instance. Ex: keyfactor.examplecompany.com. This can also be set via the `KEYFACTOR_HOSTNAME` environment variable.
 - `password` (String, Sensitive) Password of Keyfactor Command service account. This can also be set via the `KEYFACTOR_PASSWORD` environment variable.
+- `pfx_password_length` (Number) The length of password to use when generating a PFX. Default value is `12`.
+- `pfx_password_numbers` (Number) The number of to use when generating a PFX password. Default value is `4`.
+- `pfx_password_special_chars` (Number) The number of to use when generating a PFX password. Default value is `0`.
+- `pfx_password_uppercases` (Number) The number of to use when generating a PFX password. Default value is `4`.
 - `request_timeout` (Number) Global timeout for HTTP requests to Keyfactor Command instance. This can also be set via the `KEYFACTOR_CLIENT_TIMEOUT` environment variable.Default value is `60`.
 - `scopes` (String) A list of comma separated OAuth scopes to request when authenticating. This can also be set via the `KEYFACTOR_AUTH_SCOPES` environment variable.
 - `skip_tls_verify` (Boolean) Skip TLS verification when connecting to Keyfactor Command API and identity provider.Default value is `false`.This can also be set via the `KEYFACTOR_SKIP_VERIFY` environment variable.

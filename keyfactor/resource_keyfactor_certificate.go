@@ -414,11 +414,12 @@ func (r resourceKeyfactorCertificate) Create(
 		tflog.Info(ctx, "Resource is PFX certificate enrollment.")
 		if plan.KeyPassword.Value == "" {
 			tflog.Debug(ctx, "No password provided, generating random password.")
+
 			autoPassword = generatePassword(
-				DEFAULT_PFX_PASSWORD_LEN,
-				DEFAULT_PFX_PASSWORD_SPECIAL_CHAR_COUNT,
-				DEFAULT_PFX_PASSWORD_NUMBER_COUNT,
-				DEFAULT_PFX_PASSWORD_UPPER_COUNT,
+				PFXPasswordLength,
+				PFXPasswordSpecialChars,
+				PFXPasswordDigits,
+				PFXPasswordUpperCases,
 			)
 			lookupPassword = autoPassword
 		} else {
