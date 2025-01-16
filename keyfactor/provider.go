@@ -31,7 +31,14 @@ const (
 	EnvVarUsage              = "This can also be set via the `%s` environment variable."
 	DefaultValMsg            = "Default value is `%v`."
 	InvalidProviderConfigErr = "invalid provider configuration"
-	Version                  = "2.2.0-rc.14"
+	Version                  = "2.2.0-rc.20"
+)
+
+var (
+	PFXPasswordLength       int
+	PFXPasswordUpperCases   int
+	PFXPasswordSpecialChars int
+	PFXPasswordDigits       int
 )
 
 // GetSchema - Defines provider schema
@@ -39,6 +46,38 @@ func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostic
 	tflog.Info(ctx, fmt.Sprintf("Starting Keyfactor terraform provider version %s", Version))
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
+			"pfx_password_length": {
+				Type:     types.NumberType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"The length of password to use when generating a PFX. "+
+						DefaultValMsg, DEFAULT_PFX_PASSWORD_LEN,
+				),
+			},
+			"pfx_password_max_special_chars": {
+				Type:     types.NumberType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"The maximum number of to use when generating a PFX password. "+
+						DefaultValMsg, DEFAULT_PFX_PASSWORD_SPECIAL_CHAR_COUNT,
+				),
+			},
+			"pfx_password_min_digits": {
+				Type:     types.NumberType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"The minimum number of digits to use when generating a PFX password. "+
+						DefaultValMsg, DEFAULT_PFX_PASSWORD_NUMBER_COUNT,
+				),
+			},
+			"pfx_password_min_uppercases": {
+				Type:     types.NumberType,
+				Optional: true,
+				Description: fmt.Sprintf(
+					"The minimum number of uppercase letters to use when generating a PFX password. "+
+						DefaultValMsg, DEFAULT_PFX_PASSWORD_UPPER_COUNT,
+				),
+			},
 			"hostname": {
 				Type:     types.StringType,
 				Optional: true,
@@ -188,6 +227,10 @@ type providerData struct {
 	Audience             types.String `tfsdk:"audience"`
 	RequestTimeout       types.Int64  `tfsdk:"request_timeout"`
 	SkipTLSVerify        types.Bool   `tfsdk:"skip_tls_verify"`
+	PFXPasswordLength    types.Number `tfsdk:"pfx_password_length"`
+	PFXPasswordUppers    types.Number `tfsdk:"pfx_password_min_uppercases"`
+	PFXPasswordNumbers   types.Number `tfsdk:"pfx_password_min_digits"`
+	PFXPasswordSpecials  types.Number `tfsdk:"pfx_password_max_special_chars"`
 }
 
 func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_providers.Server, diag.Diagnostics) {
@@ -402,6 +445,15 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 
 }
 
+func parsePasswordFormatField(field types.Number, defaultValue int) int {
+	digitStr := field.String()
+	count, err := strconv.Atoi(digitStr)
+	if err != nil {
+		return defaultValue
+	}
+	return count
+}
+
 func (p *provider) Configure(
 	ctx context.Context,
 	req tfsdk.ConfigureProviderRequest,
@@ -423,6 +475,14 @@ func (p *provider) Configure(
 		return
 	}
 	tflog.Info(ctx, "provider configuration is valid")
+
+	PFXPasswordLength = parsePasswordFormatField(config.PFXPasswordLength, DEFAULT_PFX_PASSWORD_LEN)
+	PFXPasswordDigits = parsePasswordFormatField(config.PFXPasswordNumbers, DEFAULT_PFX_PASSWORD_NUMBER_COUNT)
+	PFXPasswordSpecialChars = parsePasswordFormatField(
+		config.PFXPasswordSpecials,
+		DEFAULT_PFX_PASSWORD_SPECIAL_CHAR_COUNT,
+	)
+	PFXPasswordUpperCases = parsePasswordFormatField(config.PFXPasswordUppers, DEFAULT_PFX_PASSWORD_UPPER_COUNT)
 
 	// User must provide a user to the provider
 	connected := false

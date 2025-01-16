@@ -288,7 +288,12 @@ func (r dataSourceCertificate) Read(
 
 	if cResp.HasPrivateKey {
 		if password == "" {
-			password = generatePassword(32, 4, 4, 4)
+			password = generatePassword(
+				PFXPasswordLength,
+				PFXPasswordSpecialChars,
+				PFXPasswordDigits,
+				PFXPasswordUpperCases,
+			)
 		}
 		tflog.Info(ctx, "Requested certificate has a private key attempting to recover from Keyfactor Command.")
 		//pKeyO, _, chainO, dErrO := r.p.client.RecoverCertificate(cResp.Id, "", "", "", password)
