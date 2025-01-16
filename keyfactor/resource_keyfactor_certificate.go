@@ -770,10 +770,10 @@ func (r resourceKeyfactorCertificate) Read(
 	if lookupPassword == "" {
 		tflog.Debug(ctx, "No password provided, generating random password.")
 		lookupPassword = generatePassword(
-			DEFAULT_PFX_PASSWORD_LEN,
-			DEFAULT_PFX_PASSWORD_SPECIAL_CHAR_COUNT,
-			DEFAULT_PFX_PASSWORD_NUMBER_COUNT,
-			DEFAULT_PFX_PASSWORD_UPPER_COUNT,
+			PFXPasswordLength,
+			PFXPasswordSpecialChars,
+			PFXPasswordDigits,
+			PFXPasswordUpperCases,
 		)
 	}
 	tflog.Info(
