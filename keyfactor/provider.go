@@ -31,7 +31,7 @@ const (
 	EnvVarUsage              = "This can also be set via the `%s` environment variable."
 	DefaultValMsg            = "Default value is `%v`."
 	InvalidProviderConfigErr = "invalid provider configuration"
-	Version                  = "2.2.0-rc.13"
+	Version                  = "2.2.0-rc.14"
 )
 
 // GetSchema - Defines provider schema
@@ -263,7 +263,9 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 	if !uOk || c.Username.Value != "" {
 		tflog.Debug(ctx, "Using username from provider configuration")
 		username = c.Username.Value
-		uOk = true
+		if username != "" {
+			uOk = true
+		}
 	}
 	ctx = tflog.SetField(ctx, "username", username)
 
@@ -272,11 +274,12 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 	if !pOk || c.Password.Value != "" {
 		tflog.Debug(ctx, "Using password from provider configuration")
 		password = c.Password.Value
-		pOk = true
+
 	}
 	ctx = tflog.SetField(ctx, "password", password)
 	if password != "" {
 		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "password", password)
+		pOk = true
 	}
 
 	tflog.Debug(ctx, "Resolving domain path from environment variables")
@@ -284,7 +287,9 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 	if !dOk || c.Domain.Value != "" {
 		tflog.Debug(ctx, "Using domain from provider configuration")
 		domain = c.Domain.Value
-		dOk = true
+		if domain != "" {
+			dOk = true
+		}
 	}
 	ctx = tflog.SetField(ctx, "domain", domain)
 
@@ -294,18 +299,22 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 	if !cOk || c.ClientID.Value != "" {
 		tflog.Debug(ctx, "Using clientID from provider configuration")
 		clientId = c.ClientID.Value
+		if clientId != "" {
+			cOk = true
+		}
 	}
 	ctx = tflog.SetField(ctx, "client_id", clientId)
 
 	tflog.Debug(ctx, "Resolving oauth clientSecret from environment variables")
 	clientSecret, csOk := os.LookupEnv(auth_providers.EnvKeyfactorClientSecret)
-	if !cOk || c.ClientSecret.Value != "" {
+	if !csOk || c.ClientSecret.Value != "" {
 		tflog.Debug(ctx, "Using clientSecret from provider configuration")
 		clientSecret = c.ClientSecret.Value
 	}
 	ctx = tflog.SetField(ctx, "client_secret", clientSecret)
 	if clientSecret != "" {
 		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "client_secret", clientSecret)
+		csOk = true
 	}
 
 	tflog.Debug(ctx, "Resolving oauth tokenURL from environment variables")
@@ -313,7 +322,9 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 	if !tOk || c.TokenURL.Value != "" {
 		tflog.Debug(ctx, "Using tokenURL from provider configuration")
 		tokenUrl = c.TokenURL.Value
-		tOk = true
+		if tokenUrl != "" {
+			tOk = true
+		}
 	}
 	ctx = tflog.SetField(ctx, "token_url", tokenUrl)
 
@@ -322,11 +333,11 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 	if !atOk || c.AccessToken.Value != "" {
 		tflog.Debug(ctx, "Using access token from provider configuration")
 		accessToken = c.AccessToken.Value
-		atOk = true
 	}
 	ctx = tflog.SetField(ctx, "access_token", accessToken)
 	if accessToken != "" {
 		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "access_token", accessToken)
+		atOk = true
 	}
 
 	isBasicAuth := uOk && pOk
