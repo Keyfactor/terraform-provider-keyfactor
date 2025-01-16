@@ -31,11 +31,12 @@ const (
 	EnvVarUsage              = "This can also be set via the `%s` environment variable."
 	DefaultValMsg            = "Default value is `%v`."
 	InvalidProviderConfigErr = "invalid provider configuration"
+	Version                  = "2.2.0-dev.0"
 )
 
 // GetSchema - Defines provider schema
-func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	fmt.Sprintf("%s", auth_providers.EnvKeyfactorHostName)
+func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	tflog.Info(ctx, fmt.Sprintf("Starting Keyfactor terraform provider version %s", Version))
 	return tfsdk.Schema{
 		Attributes: map[string]tfsdk.Attribute{
 			"hostname": {
@@ -191,40 +192,53 @@ type providerData struct {
 
 func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_providers.Server, diag.Diagnostics) {
 
+	LogFunctionEntry(ctx, "getServerConfig")
 	oAuthNoParamsConfig := &auth_providers.CommandConfigOauth{}
 	basicAuthNoParamsConfig := &auth_providers.CommandAuthConfigBasic{}
 	d := diag.Diagnostics{}
 
 	// Core provider config
+	tflog.Debug(ctx, "Resolving command hostname from environment variables")
 	hostname, hOk := os.LookupEnv(auth_providers.EnvKeyfactorHostName)
-	if !hOk && c.Hostname.Value != "" {
+	if !hOk || c.Hostname.Value != "" {
+		tflog.Debug(ctx, "Using hostname from provider configuration")
 		hostname = c.Hostname.Value
 		hOk = true
 	}
+	ctx = tflog.SetField(ctx, "hostname", hostname)
+
+	tflog.Debug(ctx, "Resolving API path from environment variables")
 	apiPath, aOk := os.LookupEnv(auth_providers.EnvKeyfactorAPIPath)
-	if !aOk && c.ApiPath.Value != "" {
+	if !aOk || c.ApiPath.Value != "" {
+		tflog.Debug(ctx, "Using API path from provider configuration")
 		apiPath = c.ApiPath.Value
 	}
+	ctx = tflog.SetField(ctx, "api_path", apiPath)
 
+	tflog.Debug(ctx, "Resolving TLS skip verify from environment variables")
 	skipVerify, svOk := os.LookupEnv(auth_providers.EnvKeyfactorSkipVerify)
 	var skipVerifyBool bool
-
 	if c.SkipTLSVerify.Value {
+		tflog.Debug(ctx, "Using TLS skip verify from provider configuration")
 		skipVerifyBool = true
 	} else if svOk {
 		//convert to bool
+		tflog.Debug(ctx, "Using TLS skip verify from environment variables")
 		skipVerify = strings.ToLower(skipVerify)
 		skipVerifyBool = skipVerify == "true" || skipVerify == "1" || skipVerify == "yes" || skipVerify == "y" || skipVerify == "t"
 	}
+	ctx = tflog.SetField(ctx, "skip_verify", skipVerify)
 
+	tflog.Debug(ctx, "Resolving command client timeout from environment variables")
 	clientTimeoutStr, tOk := os.LookupEnv(auth_providers.EnvKeyfactorClientTimeout)
 	var clientTimeout int64
-	if !tOk && c.RequestTimeout.Value != 0 {
+	if !tOk || (c.RequestTimeout.Value > 0) {
+		tflog.Debug(ctx, "Using client timeout from provider configuration")
 		clientTimeout = c.RequestTimeout.Value
 	} else if tOk {
+		tflog.Debug(ctx, "Using client timeout from environment variables")
 		clientTimeout, _ = strconv.ParseInt(clientTimeoutStr, 10, 64)
-	}
-	if clientTimeout <= 0 {
+	} else {
 		tflog.Warn(
 			ctx, fmt.Sprintf(
 				"invalid value for `client_timeout` using default of %d",
@@ -233,54 +247,96 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 		)
 		clientTimeout = auth_providers.DefaultClientTimeout
 	}
+	ctx = tflog.SetField(ctx, "client_timeout", clientTimeoutStr)
 
+	tflog.Debug(ctx, "Resolving CA cert path from environment variables")
 	caCert, caOk := os.LookupEnv(auth_providers.EnvKeyfactorCACert)
-	if !caOk && c.CommandCACertificate.Value != "" {
+	if !caOk || c.CommandCACertificate.Value != "" {
+		tflog.Debug(ctx, "Using CA cert from provider configuration")
 		caCert = c.CommandCACertificate.Value
 	}
+	ctx = tflog.SetField(ctx, "command_ca_certificate", caCert)
 
 	// Basic auth provider config
+	tflog.Debug(ctx, "Resolving username from environment variables")
 	username, uOk := os.LookupEnv(auth_providers.EnvKeyfactorUsername)
-	if !uOk && c.Username.Value != "" {
+	if !uOk || c.Username.Value != "" {
+		tflog.Debug(ctx, "Using username from provider configuration")
 		username = c.Username.Value
 		uOk = true
 	}
+	ctx = tflog.SetField(ctx, "username", username)
+
+	tflog.Debug(ctx, "Resolving password from environment variables")
 	password, pOk := os.LookupEnv(auth_providers.EnvKeyfactorPassword)
-	if !pOk && c.Password.Value != "" {
+	if !pOk || c.Password.Value != "" {
+		tflog.Debug(ctx, "Using password from provider configuration")
 		password = c.Password.Value
 		pOk = true
 	}
+	ctx = tflog.SetField(ctx, "password", password)
+	if password != "" {
+		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "password", password)
+	}
+
+	tflog.Debug(ctx, "Resolving domain path from environment variables")
 	domain, dOk := os.LookupEnv(auth_providers.EnvKeyfactorDomain)
-	if !dOk && c.Domain.Value != "" {
+	if !dOk || c.Domain.Value != "" {
+		tflog.Debug(ctx, "Using domain from provider configuration")
 		domain = c.Domain.Value
 		dOk = true
 	}
+	ctx = tflog.SetField(ctx, "domain", domain)
 
 	//oAuth auth provider config
+	tflog.Debug(ctx, "Resolving oauth clientID from environment variables")
 	clientId, cOk := os.LookupEnv(auth_providers.EnvKeyfactorClientID)
-	if !cOk && c.ClientID.Value != "" {
+	if !cOk || c.ClientID.Value != "" {
+		tflog.Debug(ctx, "Using clientID from provider configuration")
 		clientId = c.ClientID.Value
 	}
+	ctx = tflog.SetField(ctx, "client_id", clientId)
+
+	tflog.Debug(ctx, "Resolving oauth clientSecret from environment variables")
 	clientSecret, csOk := os.LookupEnv(auth_providers.EnvKeyfactorClientSecret)
-	if !cOk && c.ClientSecret.Value != "" {
+	if !cOk || c.ClientSecret.Value != "" {
+		tflog.Debug(ctx, "Using clientSecret from provider configuration")
 		clientSecret = c.ClientSecret.Value
 	}
+	ctx = tflog.SetField(ctx, "client_secret", clientSecret)
+	if clientSecret != "" {
+		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "client_secret", clientSecret)
+	}
+
+	tflog.Debug(ctx, "Resolving oauth tokenURL from environment variables")
 	tokenUrl, tOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthTokenURL)
-	if !tOk && c.TokenURL.Value != "" {
+	if !tOk || c.TokenURL.Value != "" {
+		tflog.Debug(ctx, "Using tokenURL from provider configuration")
 		tokenUrl = c.TokenURL.Value
 		tOk = true
 	}
+	ctx = tflog.SetField(ctx, "token_url", tokenUrl)
+
+	tflog.Debug(ctx, "Resolving oauth bearer token from environment variables")
 	accessToken, atOk := os.LookupEnv(auth_providers.EnvKeyfactorAccessToken)
-	if !atOk && c.AccessToken.Value != "" {
+	if !atOk || c.AccessToken.Value != "" {
+		tflog.Debug(ctx, "Using access token from provider configuration")
 		accessToken = c.AccessToken.Value
 		atOk = true
 	}
+	ctx = tflog.SetField(ctx, "access_token", accessToken)
+	if accessToken != "" {
+		ctx = tflog.MaskFieldValuesWithFieldKeys(ctx, "access_token", accessToken)
+	}
 
 	isBasicAuth := uOk && pOk
+	ctx = tflog.SetField(ctx, "is_basic_auth", isBasicAuth)
 	isOAuth := (cOk && csOk && tOk) || atOk
+	ctx = tflog.SetField(ctx, "is_oauth", isOAuth)
 
+	tflog.Debug(ctx, "Beginning authentication")
 	if isBasicAuth {
-		tflog.Debug(ctx, "call: basicAuthNoParamsConfig.Authenticate()")
+		LogFunctionCall(ctx, "basicAuthNoParamsConfig.Authenticate")
 		basicAuthNoParamsConfig.WithCommandHostName(hostname).
 			WithCommandAPIPath(apiPath).
 			WithSkipVerify(skipVerifyBool).
@@ -291,18 +347,18 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 			WithPassword(password).
 			WithDomain(domain).
 			Authenticate()
+		LogFunctionReturned(ctx, "basicAuthNoParamsConfig.Authenticate")
 
-		tflog.Debug(ctx, "complete: basicAuthNoParamsConfig.Authenticate()")
 		if bErr != nil {
-			errMsg := "unable to authenticate with provided basic auth credentials"
+			errMsg := fmt.Sprintf("unable to authenticate with provided basic auth credentials: %s" + bErr.Error())
 			tflog.Error(ctx, errMsg)
 			d.AddError("basic auth authentication error", errMsg)
 			return nil, d
 		}
-		tflog.Debug(ctx, "return: getServerConfigFromEnv()")
+		LogFunctionExit(ctx, "getServerConfigFromEnv()")
 		return basicAuthNoParamsConfig.GetServerConfig(), d
 	} else if isOAuth {
-		tflog.Debug(ctx, "call: oAuthNoParamsConfig.Authenticate()")
+		LogFunctionCall(ctx, "oAuthNoParamsConfig.Authenticate()")
 		_ = oAuthNoParamsConfig.CommandAuthConfig.
 			WithCommandHostName(hostname).
 			WithCommandAPIPath(apiPath).
@@ -315,21 +371,22 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 			WithTokenUrl(tokenUrl).
 			WithAccessToken(accessToken).
 			Authenticate()
-		tflog.Debug(ctx, "complete: oAuthNoParamsConfig.Authenticate()")
+		LogFunctionReturned(ctx, "oAuthNoParamsConfig.Authenticate()")
 		if oErr != nil {
-			oErrMsg := "unable to authenticate with provided OAuth auth credentials"
+			oErrMsg := fmt.Sprintf("unable to authenticate with provided OAuth auth credentials: %s", oErr.Error())
 			tflog.Error(ctx, oErrMsg)
 			d.AddError("oauth authentication error: "+oErr.Error(), oErrMsg)
 			return nil, d
 		}
 
-		tflog.Debug(ctx, "return: getServerConfigFromEnv()")
+		LogFunctionExit(ctx, "getServerConfigFromEnv()")
 		return oAuthNoParamsConfig.GetServerConfig(), d
 	}
 
 	cErrMsg := "unable to authenticate with provided credentials"
 	tflog.Error(ctx, cErrMsg)
 	d.AddError("client configuration error", cErrMsg)
+	LogFunctionExit(ctx, "getServerConfigFromEnv()")
 	return nil, d
 
 }

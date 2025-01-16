@@ -1,6 +1,7 @@
 package keyfactor
 
 import (
+	"context"
 	"crypto/ecdsa"
 	rsa2 "crypto/rsa"
 	"crypto/x509"
@@ -18,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 var (
@@ -593,4 +595,24 @@ func sortInSameOrder(unsortedList, sortedList []string) []string {
 		}
 	}
 	return sorted
+}
+
+func LogFunctionEntry(ctx context.Context, methodName string) {
+	tflog.Debug(ctx, fmt.Sprintf("entered: %s", methodName))
+	return
+}
+
+func LogFunctionExit(ctx context.Context, methodName string) {
+	tflog.Debug(ctx, fmt.Sprintf("exited: %s", methodName))
+	return
+}
+
+func LogFunctionCall(ctx context.Context, methodName string) {
+	tflog.Debug(ctx, fmt.Sprintf("calling: %s", methodName))
+	return
+}
+
+func LogFunctionReturned(ctx context.Context, methodName string) {
+	tflog.Debug(ctx, fmt.Sprintf("returned: %s", methodName))
+	return
 }
