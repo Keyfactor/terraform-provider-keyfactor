@@ -27,7 +27,7 @@ var (
 	upperCharSet   = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 	specialCharSet = "!@#$%&*"
 	numberSet      = "0123456789"
-	allCharSet     = lowerCharSet + upperCharSet + specialCharSet + numberSet
+	allCharSet     = lowerCharSet + upperCharSet + numberSet
 )
 
 func generatePassword(passwordLength, minSpecialChar, minNum, minUpperCase int) string {
