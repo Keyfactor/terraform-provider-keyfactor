@@ -31,7 +31,7 @@ const (
 	EnvVarUsage              = "This can also be set via the `%s` environment variable."
 	DefaultValMsg            = "Default value is `%v`."
 	InvalidProviderConfigErr = "invalid provider configuration"
-	Version                  = "2.2.0-rc.16"
+	Version                  = "2.2.0-rc.17"
 )
 
 var (
@@ -54,27 +54,27 @@ func (p *provider) GetSchema(ctx context.Context) (tfsdk.Schema, diag.Diagnostic
 						DefaultValMsg, DEFAULT_PFX_PASSWORD_LEN,
 				),
 			},
-			"pfx_password_special_chars": {
+			"pfx_password_max_special_chars": {
 				Type:     types.NumberType,
 				Optional: true,
 				Description: fmt.Sprintf(
-					"The number of to use when generating a PFX password. "+
+					"The maximum number of to use when generating a PFX password. "+
 						DefaultValMsg, DEFAULT_PFX_PASSWORD_SPECIAL_CHAR_COUNT,
 				),
 			},
-			"pfx_password_numbers": {
+			"pfx_password_min_digits": {
 				Type:     types.NumberType,
 				Optional: true,
 				Description: fmt.Sprintf(
-					"The number of to use when generating a PFX password. "+
+					"The minimum number of digits to use when generating a PFX password. "+
 						DefaultValMsg, DEFAULT_PFX_PASSWORD_NUMBER_COUNT,
 				),
 			},
-			"pfx_password_uppercases": {
+			"pfx_password_min_uppercases": {
 				Type:     types.NumberType,
 				Optional: true,
 				Description: fmt.Sprintf(
-					"The number of to use when generating a PFX password. "+
+					"The minimum number of uppercase letters to use when generating a PFX password. "+
 						DefaultValMsg, DEFAULT_PFX_PASSWORD_UPPER_COUNT,
 				),
 			},
@@ -228,9 +228,9 @@ type providerData struct {
 	RequestTimeout       types.Int64  `tfsdk:"request_timeout"`
 	SkipTLSVerify        types.Bool   `tfsdk:"skip_tls_verify"`
 	PFXPasswordLength    types.Number `tfsdk:"pfx_password_length"`
-	PFXPasswordUppers    types.Number `tfsdk:"pfx_password_uppercases"`
-	PFXPasswordNumbers   types.Number `tfsdk:"pfx_password_numbers"`
-	PFXPasswordSpecials  types.Number `tfsdk:"pfx_password_special_chars"`
+	PFXPasswordUppers    types.Number `tfsdk:"pfx_password_min_uppercases"`
+	PFXPasswordNumbers   types.Number `tfsdk:"pfx_password_min_digits"`
+	PFXPasswordSpecials  types.Number `tfsdk:"pfx_password_max_special_chars"`
 }
 
 func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_providers.Server, diag.Diagnostics) {
