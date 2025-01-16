@@ -31,7 +31,7 @@ const (
 	EnvVarUsage              = "This can also be set via the `%s` environment variable."
 	DefaultValMsg            = "Default value is `%v`."
 	InvalidProviderConfigErr = "invalid provider configuration"
-	Version                  = "2.2.0-rc.15"
+	Version                  = "2.2.0-rc.16"
 )
 
 var (
