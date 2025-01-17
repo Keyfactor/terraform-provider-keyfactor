@@ -1,3 +1,14 @@
+# v2.2.0
+
+### Provider
+
+#### Features
+* 3acc244 feat(provider): Add parameters for PFX auto password generation.
+* 77ab278 feat(provider): Add parameter for custom Keyfactor Command API Path
+* 77ab278 feat(provider): Add parameters for oauth to Keyfactor Command API
+* 77ab278 feat(provider): Add parameter for customer CA cert to use when connecting to Keyfactor Command API
+* 77ab278 feat(provider): Add parameter for skipping TLS verification when connecting to Keyfactor Command API
+
 # v2.1.11
  
 ### Certificates
