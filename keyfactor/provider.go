@@ -31,7 +31,7 @@ const (
 	EnvVarUsage              = "This can also be set via the `%s` environment variable."
 	DefaultValMsg            = "Default value is `%v`."
 	InvalidProviderConfigErr = "invalid provider configuration"
-	Version                  = "2.2.0-rc.20"
+	Version                  = "2.2.0-rc.22"
 )
 
 var (
@@ -383,6 +383,24 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 		atOk = true
 	}
 
+	tflog.Debug(ctx, "Resolving oauth scopes from environment variables")
+	scopesCsvStr, scOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthScopes)
+	if !scOk || c.Scopes.Value != "" {
+		tflog.Debug(ctx, "Using scopes from provider configuration")
+		scopesCsvStr = c.Scopes.Value
+	}
+	scopesList := strings.Split(scopesCsvStr, ",")
+	//check if slice is list of empty ""
+	if len(scopesList) == 1 && scopesList[0] == "" {
+		scopesList = []string{}
+	}
+
+	audience, audOk := os.LookupEnv(auth_providers.EnvKeyfactorAuthAudience)
+	if !audOk || c.Audience.Value != "" {
+		tflog.Debug(ctx, "Using audience from provider configuration")
+		audience = c.Audience.Value
+	}
+
 	isBasicAuth := uOk && pOk
 	ctx = tflog.SetField(ctx, "is_basic_auth", isBasicAuth)
 	isOAuth := (cOk && csOk && tOk) || atOk
@@ -422,6 +440,8 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 		oErr := oAuthNoParamsConfig.
 			WithClientId(clientId).
 			WithClientSecret(clientSecret).
+			WithScopes(scopesList).
+			WithAudience(audience).
 			WithTokenUrl(tokenUrl).
 			WithAccessToken(accessToken).
 			Authenticate()
