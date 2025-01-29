@@ -31,6 +31,11 @@ jobs:
         with:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.PASSPHRASE }}
+      - name: Extract Version from Tag
+        id: get_tag
+        run: |
+          echo "TAG_NAME=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          echo "Version extracted: ${GITHUB_REF#refs/tags/}"
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
@@ -39,3 +44,5 @@ jobs:
           # GitHub sets the GITHUB_TOKEN secret automatically.
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}
+          GORELEASER_CURRENT_TAG: ${{ env.TAG_NAME }}
+          GORELEASER_VERSION: ${{ env.TAG_NAME }}
