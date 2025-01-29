@@ -454,6 +454,7 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 		}
 
 		LogFunctionExit(ctx, "getServerConfigFromEnv()")
+		oAuthNoParamsConfig.GetHttpClient()
 		return oAuthNoParamsConfig.GetServerConfig(), d
 	}
 

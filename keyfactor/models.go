@@ -44,6 +44,9 @@ type KeyfactorCertificate struct {
 	ID types.String `tfsdk:"identifier"`
 	// CSR Request Fields
 	CSR types.String `tfsdk:"csr"`
+	// PFX Fields
+	FriendlyName        types.String `tfsdk:"friendly_name"`
+	UseCNAsFriendlyName types.Bool   `tfsdk:"use_cn_as_friendly_name"`
 	// Subject Fields
 	CommonName         types.String `tfsdk:"common_name"`
 	Locality           types.String `tfsdk:"locality"`
