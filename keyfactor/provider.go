@@ -31,7 +31,6 @@ const (
 	EnvVarUsage              = "This can also be set via the `%s` environment variable."
 	DefaultValMsg            = "Default value is `%v`."
 	InvalidProviderConfigErr = "invalid provider configuration"
-	Version                  = "2.2.0-rc.22"
 )
 
 var (
@@ -39,6 +38,7 @@ var (
 	PFXPasswordUpperCases   int
 	PFXPasswordSpecialChars int
 	PFXPasswordDigits       int
+	Version                 = "2.2.0-rc.23"
 )
 
 // GetSchema - Defines provider schema
@@ -454,6 +454,7 @@ func (p *provider) getServerConfig(c *providerData, ctx context.Context) (*auth_
 		}
 
 		LogFunctionExit(ctx, "getServerConfigFromEnv()")
+		oAuthNoParamsConfig.GetHttpClient()
 		return oAuthNoParamsConfig.GetServerConfig(), d
 	}
 

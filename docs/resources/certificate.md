@@ -93,6 +93,7 @@ resource "keyfactor_certificate" "kf_csr_cert" {
 - `country` (String) Subject country of the certificate
 - `csr` (String) Base-64 encoded certificate signing request (CSR)
 - `dns_sans` (List of String) List of DNS names to use as subjects of the certificate.
+- `friendly_name` (String) Only applicable for PFX enrollments. A friendly name for the certificate. If not provided, the common name will be used unless `use_cn_as_friendly_name` is set to `false`.
 - `ip_sans` (List of String) List of DNS names to use as subjects of the certificate.
 - `key_password` (String, Sensitive) Password used to recover the private key from Keyfactor Command. NOTE: If no value is provided a random password will be generated for key recovery. This value is not stored and does not encrypt the private key in Terraform state. Also note that if a password is provided it must meet any password complexity requirements enforced by the CA template or creation will fail. Auto-generated passwords will be of length 32 and contain a minimum of 4 of the following: uppercase, lowercase, numeric, and special characters.
 - `locality` (String) Subject locality (L) of the certificate
@@ -101,6 +102,7 @@ resource "keyfactor_certificate" "kf_csr_cert" {
 - `organizational_unit` (String) Subject organizational unit (OU) of the certificate
 - `state` (String) Subject state (ST) of the certificate
 - `uri_sans` (List of String) List of URIs to use as subjects of the certificate.
+- `use_cn_as_friendly_name` (Boolean) Only applicable for PFX enrollments. Use the common name as the friendly name for the certificate. Defaults to `true`. NOTE: Keyfactor Command must be configured to `allow custom friendly name` for this to work under `Application Settings > Enrollment > PFX`.
 
 ### Read-Only
 
