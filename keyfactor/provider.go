@@ -38,7 +38,7 @@ var (
 	PFXPasswordUpperCases   int
 	PFXPasswordSpecialChars int
 	PFXPasswordDigits       int
-	Version                 = "2.2.0-rc.23"
+	Version                 = "2.2.0"
 )
 
 // GetSchema - Defines provider schema
