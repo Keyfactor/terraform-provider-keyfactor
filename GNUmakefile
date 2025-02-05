@@ -1,18 +1,15 @@
 PROVIDER_DIR := $(PWD)
 TEST?=$$(go list ./... | grep -v 'vendor')
-HOSTNAME=github.com
+HOSTNAME=keyfactor.com
 GOFMT_FILES  := $$(find $(PROVIDER_DIR) -name '*.go' |grep -v vendor)
-NAMESPACE=keyfactor-pub
+NAMESPACE=keyfactor
 WEBSITE_REPO=https://github.com/Keyfactor/terraform-provider-keyfactor
 NAME=keyfactor
-VERSION=2.1.10
+VERSION=2.2.0
 BINARY=terraform-provider-${NAME}
-BINARYV2=terraform-provider-${NAME}_${VERSION}
 OS_ARCH := $(shell go env GOOS)_$(shell go env GOARCH)
-BASEDIR := ~/.terraform.d/plugins
+BASEDIR := ${HOME}/.terraform.d/plugins
 INSTALLDIR := ${BASEDIR}/${HOSTNAME}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
-INSTALLDIR2 := ${BASEDIR}/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
-INSTALLDIR3 := ${BASEDIR}/keyfactor.com/${NAMESPACE}/${NAME}/${VERSION}/${OS_ARCH}
 
 default: build
 
@@ -24,14 +21,6 @@ tfdocs:
 	tfplugindocs generate
 	terraform fmt -recursive ./examples/
 
-macos_release:
-	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
-	mkdir -p ${HOME}/.terraform.d/plugins/keyfactor.com/keyfactor/keyfactor/${VERSION}/darwin_amd64
-	mkdir -p ${HOME}/.terraform.d/plugins/github.com/keyfactor-pub/keyfactor/${VERSION}/darwin_amd64
-	cp ./bin/${BINARY}_${VERSION}_darwin_amd64 ${HOME}/.terraform.d/plugins/keyfactor.com/keyfactor/keyfactor/${VERSION}/darwin_amd64/${BINARY}
-	cp ./bin/${BINARY}_${VERSION}_darwin_amd64 ${HOME}/.terraform.d/plugins/github.com/keyfactor-pub/keyfactor/${VERSION}/darwin_amd64/${BINARY}
-	mv ./bin/${BINARY}_${VERSION}_darwin_amd64 ./bin/terraform-provider-keyfactor
-	zip -j ./bin/${BINARY}_${VERSION}_darwin_amd64.zip ./bin/terraform-provider-keyfactor
 release:
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
 	mv ./bin/${BINARY}_${VERSION}_darwin_amd64 ./bin/terraform-provider-keyfactor
@@ -71,14 +60,8 @@ release:
 	zip -j ./bin/${BINARY}_${VERSION}_windows_amd64.zip ./bin/terraform-provider-keyfactor.exe
 install:
 	go build -o ${BINARY}
-#	rm -rf ${INSTALLDIR}
-#	mkdir -p ${INSTALLDIR}
-#	cp ${BINARY} ${INSTALLDIR}
-#	mkdir -p ${INSTALLDIR2}
-#	cp ${BINARY} ${INSTALLDIR2}
-#	mkdir -p ${INSTALLDIR3}
-#	cp ${BINARY} ${INSTALLDIR3}
-	cp ${BINARY} ${BASEDIR}/${BINARYV2}
+	mkdir -p ${INSTALLDIR}
+	cp ${BINARY} ${INSTALLDIR}/${BINARY}
 
 test:
 	go test -i $(TEST) || exit 1
