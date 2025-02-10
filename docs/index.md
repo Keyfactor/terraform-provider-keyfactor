@@ -13,11 +13,23 @@ description: |-
 ## Example Usage
 
 ```terraform
+# basic auth configuration example
 provider "keyfactor" {
   username = "COMMAND\\your_username"
   password = "your_api_password"
   hostname = "mykfinstance.kfdelivery.com"
   domain   = "mydomain.com"
+}
+
+# oauth configuration example
+provider "keyfactor" {
+  client_id     = "my_oauth_client_id"
+  client_secret = "my_oauth_client_secret"
+  scopes        = "enroll,agents,cert:admin" # These are example, fictitious, scopes and will vary based on identity provider.
+  token_url     = "https://mykfinstance.kfdelivery.com:8444/realms/Keyfactor/protocol/openid-connect/token"
+  hostname      = "mykfinstance.kfdelivery.com"
+
+  alias = "keyfactor_command_oauth" # This isn't required
 }
 ```
 
@@ -26,9 +38,23 @@ provider "keyfactor" {
 
 ### Optional
 
-- `appkey` (String, Sensitive) Application key provisioned by Keyfactor Command instance. This can also be set via the `KEYFACTOR_APPKEY` environment variable.
+- `access_token` (String, Sensitive) Access token for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_ACCESS_TOKEN` environment variable.
+- `api_path` (String) Path to Keyfactor Command API.Default value is `KeyfactorAPI`.This can also be set via the `KEYFACTOR_API_PATH` environment variable.
+- `appkey` (String, Sensitive) Application key provisioned by Keyfactor Command instance.This can also be set via the `KEYFACTOR_APPKEY` environment variable.
+- `audience` (String) OAuth audience to request when authenticating. This can also be set via the `KEYFACTOR_AUTH_AUDIENCE` environment variable.
+- `auth_ca_certificate` (String) Path to CA certificate to use when connecting to a Keyfactor Command identity provider in PEM format.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
+- `client_id` (String) Client ID for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_CLIENT_ID` environment variable.
+- `client_secret` (String, Sensitive) Client secret for OAuth authentication. This can also be set via the `KEYFACTOR_AUTH_CLIENT_SECRET` environment variable.
+- `command_ca_certificate` (String) Path to CA certificate to use when connecting to the Keyfactor Command API in PEM format.This can also be set via the `KEYFACTOR_CA_CERT` environment variable.
 - `domain` (String) Domain that Keyfactor Command instance is hosted on. This can also be set via the `KEYFACTOR_DOMAIN` environment variable.
 - `hostname` (String) Hostname of Keyfactor Command instance. Ex: keyfactor.examplecompany.com. This can also be set via the `KEYFACTOR_HOSTNAME` environment variable.
 - `password` (String, Sensitive) Password of Keyfactor Command service account. This can also be set via the `KEYFACTOR_PASSWORD` environment variable.
-- `request_timeout` (Number) Global timeout for HTTP requests to Keyfactor Command instance. Default is 30 seconds.
+- `pfx_password_length` (Number) The length of password to use when generating a PFX. Default value is `12`.
+- `pfx_password_max_special_chars` (Number) The maximum number of to use when generating a PFX password. Default value is `0`.
+- `pfx_password_min_digits` (Number) The minimum number of digits to use when generating a PFX password. Default value is `4`.
+- `pfx_password_min_uppercases` (Number) The minimum number of uppercase letters to use when generating a PFX password. Default value is `4`.
+- `request_timeout` (Number) Global timeout for HTTP requests to Keyfactor Command instance. This can also be set via the `KEYFACTOR_CLIENT_TIMEOUT` environment variable.Default value is `60`.
+- `scopes` (String) A list of comma separated OAuth scopes to request when authenticating. This can also be set via the `KEYFACTOR_AUTH_SCOPES` environment variable.
+- `skip_tls_verify` (Boolean) Skip TLS verification when connecting to Keyfactor Command API and identity provider.Default value is `false`.This can also be set via the `KEYFACTOR_SKIP_VERIFY` environment variable.
+- `token_url` (String) OAuth token URL for Keyfactor Command instance. This can also be set via the `KEYFACTOR_AUTH_TOKEN_URL` environment variable.
 - `username` (String) Username of Keyfactor Command service account. This can also be set via the `KEYFACTOR_USERNAME` environment variable.

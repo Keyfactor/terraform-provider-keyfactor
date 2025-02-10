@@ -1,8 +1,33 @@
+# v2.2.0
+
+### Provider
+
+#### Features
+
+* 3acc244 feat(provider): Add parameters for PFX auto password generation.
+* 77ab278 feat(provider): Add parameter for custom Keyfactor Command API Path
+* 77ab278 feat(provider): Add parameters for oauth to Keyfactor Command API
+* 77ab278 feat(provider): Add parameter for customer CA cert to use when connecting to Keyfactor Command API
+* 77ab278 feat(provider): Add parameter for skipping TLS verification when connecting to Keyfactor Command API
+
+### Certificates
+
+#### Features
+
+* 4de79ae feat(certificates): Add `friendly name` as a configurable. Default behavior remains the same and will continue
+  to pass `CN` as `friendly name`.
+
+#### Fixes
+
+* 4de79ae fix(certs): Resolve `inconsistent state` issues on `metadata` `update` operations, by including
+  `collection_id`
+
 # v2.1.11
- 
+
 ### Certificates
 
 #### Fixes
+
 * c6621a5 fix(certificates): CSR enrollments set `certificate_pem` on create.
 * c6621a5 fix(certificates): Fix JSON refs in request model for `certificate/download`.
 
@@ -11,6 +36,7 @@
 ### Certificates
 
 #### Fixes
+
 * 128827b fix(certificates):  CSR enrollments now correctly handle `collection_id`.
 
 # v2.1.9
