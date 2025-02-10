@@ -65,6 +65,18 @@ func generatePassword(passwordLength, minSpecialChar, minNum, minUpperCase int) 
 	return string(inRune)
 }
 
+func splitWithEscaping(s string, separator string, escapeString string) []string {
+    a := strings.Split(s, separator)
+
+    for i := len(a) - 2; i >= 0; i-- {
+        if strings.HasSuffix(a[i], escapeString) {
+            a[i] = a[i][:len(a[i])] + separator + a[i+1]
+            a = append(a[:i+1], a[i+2:]...)
+        }
+    }
+    return a
+}
+
 func expandSubject(subject string) (
 	types.String,
 	types.String,
@@ -82,7 +94,7 @@ func expandSubject(subject string) (
 		c  string
 	)
 	if subject != "" {
-		subjectFields := strings.Split(subject, ",") // Separate subject fields into slices
+		subjectFields := splitWithEscaping(subject, ",", "\\") // Separate subject fields into slices
 		for _, field := range subjectFields {        // Iterate and assign slices to associated map
 			if strings.Contains(field, "CN=") {
 				//result["subject_common_name"] = types.String{Value: strings.Replace(field, "CN=", "", 1)}
@@ -111,7 +123,7 @@ func expandSubject(subject string) (
 func flattenSubject(subject string) types.Object {
 	data := make(map[string]string) // Inner subject interface is a string mapped interface
 	if subject != "" {
-		subjectFields := strings.Split(subject, ",") // Separate subject fields into slices
+		subjectFields := splitWithEscaping(subject, ",", "\\") // Separate subject fields into slices
 		for _, field := range subjectFields {        // Iterate and assign slices to associated map
 			if strings.Contains(field, "CN=") {
 				//result["subject_common_name"] = types.String{Value: strings.Replace(field, "CN=", "", 1)}
