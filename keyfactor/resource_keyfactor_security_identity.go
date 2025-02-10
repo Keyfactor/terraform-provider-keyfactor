@@ -3,7 +3,7 @@ package keyfactor
 import (
 	"context"
 	"fmt"
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -55,7 +55,10 @@ func (r resourceSecurityIdentityType) GetSchema(_ context.Context) (tfsdk.Schema
 }
 
 // New resource instance
-func (r resourceSecurityIdentityType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
+func (r resourceSecurityIdentityType) NewResource(_ context.Context, p tfsdk.Provider) (
+	tfsdk.Resource,
+	diag.Diagnostics,
+) {
 	return resourceSecurityIdentity{
 		p: *(p.(*provider)),
 	}, nil
@@ -65,7 +68,11 @@ type resourceSecurityIdentity struct {
 	p provider
 }
 
-func (r resourceSecurityIdentity) Read(ctx context.Context, request tfsdk.ReadResourceRequest, response *tfsdk.ReadResourceResponse) {
+func (r resourceSecurityIdentity) Read(
+	ctx context.Context,
+	request tfsdk.ReadResourceRequest,
+	response *tfsdk.ReadResourceResponse,
+) {
 	var state SecurityIdentity
 	diags := request.State.Get(ctx, &state)
 	response.Diagnostics.Append(diags...)
@@ -81,7 +88,10 @@ func (r resourceSecurityIdentity) Read(ctx context.Context, request tfsdk.ReadRe
 	identities, err := r.p.client.GetSecurityIdentities()
 
 	if err != nil {
-		response.Diagnostics.AddError("Error listing identities from Keyfactor.", "Error reading identities: "+err.Error())
+		response.Diagnostics.AddError(
+			"Error listing identities from Keyfactor.",
+			"Error reading identities: "+err.Error(),
+		)
 	}
 
 	for _, identity := range identities {
@@ -107,7 +117,12 @@ func (r resourceSecurityIdentity) Read(ctx context.Context, request tfsdk.ReadRe
 					tflog.Warn(ctx, fmt.Sprintf("Error looking up role %s on Keyfactor.", role))
 					response.Diagnostics.AddWarning(
 						"Error looking up role on Keyfactor.",
-						fmt.Sprintf("Error looking up role '%s' on Keyfactor. '%s' will not have role '%s'.", roleStr, state.AccountName.Value, roleStr),
+						fmt.Sprintf(
+							"Error looking up role '%s' on Keyfactor. '%s' will not have role '%s'.",
+							roleStr,
+							state.AccountName.Value,
+							roleStr,
+						),
 					)
 					continue
 				}
@@ -134,7 +149,11 @@ func (r resourceSecurityIdentity) Read(ctx context.Context, request tfsdk.ReadRe
 	}
 }
 
-func (r resourceSecurityIdentity) Update(ctx context.Context, request tfsdk.UpdateResourceRequest, response *tfsdk.UpdateResourceResponse) {
+func (r resourceSecurityIdentity) Update(
+	ctx context.Context,
+	request tfsdk.UpdateResourceRequest,
+	response *tfsdk.UpdateResourceResponse,
+) {
 	// Get plan values
 	var plan SecurityIdentity
 	diags := request.Plan.Get(ctx, &plan)
@@ -175,7 +194,12 @@ func (r resourceSecurityIdentity) Update(ctx context.Context, request tfsdk.Upda
 			tflog.Warn(ctx, fmt.Sprintf("Error looking up role %s on Keyfactor.", role))
 			response.Diagnostics.AddWarning(
 				"Error looking up role on Keyfactor.",
-				fmt.Sprintf("Error looking up role '%s' on Keyfactor. '%s' will not have role '%s'.", roleStr, state.AccountName.Value, roleStr),
+				fmt.Sprintf(
+					"Error looking up role '%s' on Keyfactor. '%s' will not have role '%s'.",
+					roleStr,
+					state.AccountName.Value,
+					roleStr,
+				),
 			)
 			continue
 		}
@@ -205,7 +229,11 @@ func (r resourceSecurityIdentity) Update(ctx context.Context, request tfsdk.Upda
 	}
 }
 
-func (r resourceSecurityIdentity) Delete(ctx context.Context, request tfsdk.DeleteResourceRequest, response *tfsdk.DeleteResourceResponse) {
+func (r resourceSecurityIdentity) Delete(
+	ctx context.Context,
+	request tfsdk.DeleteResourceRequest,
+	response *tfsdk.DeleteResourceResponse,
+) {
 	var state SecurityIdentity
 	diags := request.State.Get(ctx, &state)
 	kfClient := r.p.client
@@ -233,7 +261,11 @@ func (r resourceSecurityIdentity) Delete(ctx context.Context, request tfsdk.Dele
 
 }
 
-func (r resourceSecurityIdentity) Create(ctx context.Context, request tfsdk.CreateResourceRequest, response *tfsdk.CreateResourceResponse) {
+func (r resourceSecurityIdentity) Create(
+	ctx context.Context,
+	request tfsdk.CreateResourceRequest,
+	response *tfsdk.CreateResourceResponse,
+) {
 	if !r.p.configured {
 		response.Diagnostics.AddError(
 			"Provider not configured",
@@ -291,7 +323,12 @@ func (r resourceSecurityIdentity) Create(ctx context.Context, request tfsdk.Crea
 				tflog.Warn(ctx, fmt.Sprintf("Error looking up role with id: %s", role))
 				response.Diagnostics.AddWarning(
 					"Error looking up role on Keyfactor.",
-					fmt.Sprintf("Error looking up role '%s' on Keyfactor. %s will not have role %s.", roleStr, accountName, roleStr),
+					fmt.Sprintf(
+						"Error looking up role '%s' on Keyfactor. %s will not have role %s.",
+						roleStr,
+						accountName,
+						roleStr,
+					),
 				)
 				continue
 			}
@@ -300,7 +337,10 @@ func (r resourceSecurityIdentity) Create(ctx context.Context, request tfsdk.Crea
 		}
 		err = setIdentityRole(ctx, kfClient, identityArg.AccountName, validRolesInterface)
 		if err != nil {
-			response.Diagnostics.AddError("Error updating identity roles.", "Error updating identity roles: "+err.Error())
+			response.Diagnostics.AddError(
+				"Error updating identity roles.",
+				"Error updating identity roles: "+err.Error(),
+			)
 		}
 	}
 
@@ -323,7 +363,11 @@ func (r resourceSecurityIdentity) Create(ctx context.Context, request tfsdk.Crea
 	}
 }
 
-func (r resourceSecurityIdentity) ImportState(ctx context.Context, request tfsdk.ImportResourceStateRequest, response *tfsdk.ImportResourceStateResponse) {
+func (r resourceSecurityIdentity) ImportState(
+	ctx context.Context,
+	request tfsdk.ImportResourceStateRequest,
+	response *tfsdk.ImportResourceStateResponse,
+) {
 	ctx = context.WithValue(ctx, "import", true)
 	var state SecurityIdentity
 
@@ -333,7 +377,10 @@ func (r resourceSecurityIdentity) ImportState(ctx context.Context, request tfsdk
 	identities, err := r.p.client.GetSecurityIdentities()
 
 	if err != nil {
-		response.Diagnostics.AddError("Error listing identities from Keyfactor.", "Error reading identities: "+err.Error())
+		response.Diagnostics.AddError(
+			"Error listing identities from Keyfactor.",
+			"Error reading identities: "+err.Error(),
+		)
 	}
 
 	identityExists := false
@@ -359,7 +406,10 @@ func (r resourceSecurityIdentity) ImportState(ctx context.Context, request tfsdk
 	}
 
 	if !identityExists {
-		response.Diagnostics.AddError("Unknown identity error.", fmt.Sprintf("Unable to find identity %s on Keyfactor. Import failed.", accountName))
+		response.Diagnostics.AddError(
+			"Unknown identity error.",
+			fmt.Sprintf("Unable to find identity %s on Keyfactor. Import failed.", accountName),
+		)
 		return
 	}
 
@@ -370,7 +420,12 @@ func (r resourceSecurityIdentity) ImportState(ctx context.Context, request tfsdk
 	}
 }
 
-func setIdentityRole(ctx context.Context, kfClient *api.Client, identityAccountName string, roleIds []interface{}) error {
+func setIdentityRole(
+	ctx context.Context,
+	kfClient *api.Client,
+	identityAccountName string,
+	roleIds []interface{},
+) error {
 	// Basic idea here is that we want to sync the output of the GET identity endpoint with the roleIds passed to
 	// this function. This could mean that we are removing the identity from a role, adding an identity, or not making
 	// any change. This is required because no PUT endpoint exists for /identity.

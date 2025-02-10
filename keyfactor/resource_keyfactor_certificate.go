@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -200,6 +200,25 @@ func (r resourceKeyfactorCertificateType) GetSchema(_ context.Context) (tfsdk.Sc
 				Computed:    true,
 				Sensitive:   true,
 				Description: "PEM formatted PKCS#1 private key imported if cert_template has KeyRetention set to a value other than None, and the certificate was not enrolled using a CSR.",
+			},
+			"use_cn_as_friendly_name": {
+				Type:     types.BoolType,
+				Computed: false,
+				Description: "Only applicable for PFX enrollments. Use the common name as the friendly name for the" +
+					" certificate. Defaults to `true`. " +
+					"NOTE: Keyfactor Command must be configured to `allow custom friendly name` for this to work" +
+					" under `Application Settings > Enrollment > PFX`.",
+				Optional:      true,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
+			},
+			"friendly_name": {
+				Type:     types.StringType,
+				Computed: false,
+				Description: "Only applicable for PFX enrollments. A friendly name for the certificate. " +
+					"If not provided, " +
+					"the common name will be used unless `use_cn_as_friendly_name` is set to `false`.",
+				Optional:      true,
+				PlanModifiers: []tfsdk.AttributePlanModifier{tfsdk.RequiresReplace()},
 			},
 		},
 	}, nil
@@ -403,6 +422,8 @@ func (r resourceKeyfactorCertificate) Create(
 			CertificateTemplate:  plan.CertificateTemplate,
 			Metadata:             plan.Metadata,
 			CollectionId:         plan.CollectionId,
+			FriendlyName:         plan.FriendlyName,
+			UseCNAsFriendlyName:  plan.UseCNAsFriendlyName,
 		}
 
 		diags = response.State.Set(ctx, result)
@@ -414,11 +435,12 @@ func (r resourceKeyfactorCertificate) Create(
 		tflog.Info(ctx, "Resource is PFX certificate enrollment.")
 		if plan.KeyPassword.Value == "" {
 			tflog.Debug(ctx, "No password provided, generating random password.")
+
 			autoPassword = generatePassword(
-				DEFAULT_PFX_PASSWORD_LEN,
-				DEFAULT_PFX_PASSWORD_SPECIAL_CHAR_COUNT,
-				DEFAULT_PFX_PASSWORD_NUMBER_COUNT,
-				DEFAULT_PFX_PASSWORD_UPPER_COUNT,
+				PFXPasswordLength,
+				PFXPasswordSpecialChars,
+				PFXPasswordDigits,
+				PFXPasswordUpperCases,
 			)
 			lookupPassword = autoPassword
 		} else {
@@ -426,9 +448,19 @@ func (r resourceKeyfactorCertificate) Create(
 			lookupPassword = plan.KeyPassword.Value
 		}
 
+		useCNAsFriendlyName := true // Defaults to true for backwards compatability
+		if !plan.UseCNAsFriendlyName.Null {
+			useCNAsFriendlyName = plan.UseCNAsFriendlyName.Value
+		}
+
+		var friendlyName = plan.FriendlyName.Value
+		if friendlyName == "" && useCNAsFriendlyName {
+			friendlyName = plan.CommonName.Value
+		}
+
 		tflog.Debug(ctx, "Creating API request.")
 		PFXArgs := &api.EnrollPFXFctArgsV2{
-			CustomFriendlyName:          plan.CommonName.Value,
+			CustomFriendlyName:          friendlyName,
 			Password:                    lookupPassword,
 			PopulateMissingValuesFromAD: false, //TODO: Add support for this
 			CertificateAuthority:        plan.CertificateAuthority.Value,
@@ -465,6 +497,7 @@ func (r resourceKeyfactorCertificate) Create(
 			return
 		}
 		ctx = tflog.SetField(ctx, "pfx_args", string(jsonData))
+
 		tflog.Debug(ctx, fmt.Sprintf("PFXArgs: %s", string(jsonData)))
 		tflog.Debug(ctx, fmt.Sprintf("Creating PFX certificate %s on Keyfactor.", PFXArgs.Subject.SubjectCommonName))
 		tflog.Debug(ctx, "Calling EnrollPFXV2.")
@@ -644,6 +677,8 @@ func (r resourceKeyfactorCertificate) Create(
 			RequestId:            types.Int64{Value: int64(enrollResponse.CertificateInformation.KeyfactorRequestID)},
 			Metadata:             plan.Metadata,
 			CollectionId:         plan.CollectionId,
+			FriendlyName:         plan.FriendlyName,
+			UseCNAsFriendlyName:  plan.UseCNAsFriendlyName,
 		}
 
 		tflog.Debug(ctx, "Setting state")
@@ -768,10 +803,10 @@ func (r resourceKeyfactorCertificate) Read(
 	if lookupPassword == "" {
 		tflog.Debug(ctx, "No password provided, generating random password.")
 		lookupPassword = generatePassword(
-			DEFAULT_PFX_PASSWORD_LEN,
-			DEFAULT_PFX_PASSWORD_SPECIAL_CHAR_COUNT,
-			DEFAULT_PFX_PASSWORD_NUMBER_COUNT,
-			DEFAULT_PFX_PASSWORD_UPPER_COUNT,
+			PFXPasswordLength,
+			PFXPasswordSpecialChars,
+			PFXPasswordDigits,
+			PFXPasswordUpperCases,
 		)
 	}
 	tflog.Info(
@@ -1023,6 +1058,8 @@ func (r resourceKeyfactorCertificate) Read(
 			Metadata:            metadata,
 			CertificateId:       types.Int64{Value: int64(cResp.Id), Null: isNullId(cResp.Id)},
 			CollectionId:        state.CollectionId,
+			FriendlyName:        state.FriendlyName,
+			UseCNAsFriendlyName: state.UseCNAsFriendlyName,
 		}
 	} else {
 		tflog.Debug(ctx, "Creating state object for certificate PFX.")
@@ -1058,6 +1095,8 @@ func (r resourceKeyfactorCertificate) Read(
 			Metadata:            metadata,
 			CertificateId:       types.Int64{Value: int64(cResp.Id), Null: isNullId(cResp.Id)},
 			CollectionId:        state.CollectionId,
+			FriendlyName:        state.FriendlyName,
+			UseCNAsFriendlyName: state.UseCNAsFriendlyName,
 		}
 	}
 
@@ -1187,6 +1226,9 @@ func (r resourceKeyfactorCertificate) Update(
 			CertificateAuthority: plan.CertificateAuthority,
 			CertificateTemplate:  plan.CertificateTemplate,
 			Metadata:             plan.Metadata,
+			UseCNAsFriendlyName:  state.UseCNAsFriendlyName,
+			FriendlyName:         state.FriendlyName,
+			CollectionId:         state.CollectionId,
 		}
 
 		diags = response.State.Set(ctx, result)
@@ -1254,6 +1296,9 @@ func (r resourceKeyfactorCertificate) Update(
 			CertificateAuthority: state.CertificateAuthority,
 			CertificateTemplate:  state.CertificateTemplate,
 			Metadata:             plan.Metadata,
+			UseCNAsFriendlyName:  state.UseCNAsFriendlyName,
+			FriendlyName:         state.FriendlyName,
+			CollectionId:         state.CollectionId,
 		}
 
 		diags = response.State.Set(ctx, result)

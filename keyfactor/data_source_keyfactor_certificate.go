@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Keyfactor/keyfactor-go-client/v2/api"
+	"github.com/Keyfactor/keyfactor-go-client/v3/api"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -288,7 +288,12 @@ func (r dataSourceCertificate) Read(
 
 	if cResp.HasPrivateKey {
 		if password == "" {
-			password = generatePassword(32, 4, 4, 4)
+			password = generatePassword(
+				PFXPasswordLength,
+				PFXPasswordSpecialChars,
+				PFXPasswordDigits,
+				PFXPasswordUpperCases,
+			)
 		}
 		tflog.Info(ctx, "Requested certificate has a private key attempting to recover from Keyfactor Command.")
 		//pKeyO, _, chainO, dErrO := r.p.client.RecoverCertificate(cResp.Id, "", "", "", password)
